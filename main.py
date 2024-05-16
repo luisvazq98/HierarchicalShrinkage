@@ -99,4 +99,3 @@ plt.ylabel('f(x)')
 plt.grid(True)
 plt.savefig("HS1")
 plt.show()
-

@@ -26,16 +26,17 @@ x_test_flat = x_test.reshape(x_test.shape[0], -1) / 255.0
 # PCA
 pca = PCA(0.99)
 pca.fit(x_train_flat)
-x_train_flt = pca.transform(x_train_flat)
+x_train_flat = pca.transform(x_train_flat)
+x_test_flat = pca.transform(x_test_flat)
 
 
 # Decision Tree Model
 DT = DecisionTreeClassifier()
-history = DT.fit(x_train_flat, y_train)
+DT.fit(x_train_flat, y_train)
 
 # HS Model
 HS = HSTreeClassifierCV()
-history = HS.fit(x_train_flat, y_train)
+HS.fit(x_train_flat, y_train)
 
 
 # Predictions

@@ -10,6 +10,8 @@ from sklearn.datasets import load_iris
 from sklearn import datasets
 import matplotlib.pyplot as plt
 import pandas as pd
+from sklearn.decomposition import PCA
+from imodels import HSTreeClassifierCV
 import zipfile
 import os
 import pathlib
@@ -30,50 +32,9 @@ columns = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-
            'hours-per-week', 'native-country', 'income']
 
 
-
-# Download the dataset
-dataset_url = "https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz"
-data_dir = tf.keras.utils.get_file('oxford_pets', origin=dataset_url, extract=True)
-data_dir = pathlib.Path(data_dir).parent / "images"
-
-# Load dataset from the directory
-batch_size = 32
-img_height = 128
-img_width = 128
-
-dataset = image_dataset_from_directory(
-    data_dir,
-    image_size=(img_height, img_width),
-    batch_size=batch_size,
-    label_mode='int'  # Labels are categorical integers (0-36 for the breeds)
-)
-
-
-
-
-# List all image files
-image_files = [f for f in os.listdir(data_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
-
-# Load images
-images = []
-for file in image_files:
-    img_path = os.path.join(data_dir, file)
-    img = load_img(img_path, target_size=(128, 128))  # Resize images to 128x128 pixels
-    img_array = img_to_array(img) / 255.0  # Normalize pixel values to [0, 1]
-    images.append(img_array)
-
-# Convert to a numpy array
-images = np.array(images)
-
-print(f"Loaded {len(images)} images.")
-print(images.shape)
-
-
-
-
 ###############################################
 # 
-# FUNCTIONS FOR LOADING DATA
+# FUNCTIONS
 #
 ###############################################
 
@@ -95,11 +56,6 @@ def load_data_image(dataset):
 
 #dataset, info = tfds.load('oxford_iiit_pet', split=['train[:80%]', 'train[80%:]'], with_info=True, as_supervised=True)
 
-###############################################
-#
-# FUNCTIONS FOR PREPROCESSING DATA
-#
-###############################################
 
 ###### SPLITTING DATASETS (80 TRAINING, 20 TESTING) ######
 def split_data(x, y):
@@ -185,6 +141,9 @@ y_credit = credit_card['default payment next month']
 # ADULT INCOME
 x_train, x_test, y_train, y_test = split_data(x, y)
 
+x_train = x_train.reset_index(drop=True).to_numpy()
+y_train = y_train.reset_index(drop=True).to_numpy()
+
 # Standard Scaler
 scaler = StandardScaler()
 x_train = scaler.fit_transform(x_train)
@@ -202,7 +161,12 @@ x_train_credit, x_test_credit, y_train_credit, y_test_credit = split_data(x_cred
 
 
 ###### PCA ######
+# PCA
 
+pca = PCA(0.99)
+pca.fit(x_train_credit)
+x_train_credit = pca.transform(x_train_credit)
+x_test_credit = pca.transform(x_test_credit)
 
 
 
@@ -234,13 +198,56 @@ start_time = time.time()
 clf.fit(x_train_credit, y_train_credit)
 end_time = time.time()
 
+# OXFORD PETS
+
+
+###############################################
+#
+# HIERARCHICAL SHRINKAGE MODELS
+#
+###############################################
+clf = HSTreeClassifierCV()
+
+# CIFAR-10
+start_time = time.time()
+clf.fit(x_train_cifar_flat, y_train_cifar.ravel())
+end_time = time.time()
+
+# FASHION-MINST
+start_time = time.time()
+clf.fit(x_train_fashion_flat, y_train_fashion.ravel())
+end_time = time.time()
+
+# ADULT INCOME
+x_train = x_train.reset_index(drop=True).to_numpy()
+y_train = y_train.reset_index(drop=True).to_numpy()
+
+start_time = time.time()
+clf.fit(x_train, y_train)
+end_time = time.time()
 
 
 # TITANIC
+x_train_titanic = x_train_titanic.reset_index(drop=True).to_numpy()
+y_train_titanic = y_train_titanic.reset_index(drop=True).to_numpy()
 
-# OXFORD PETS
 
-# CREDIT CARD
+start_time = time.time()
+clf.fit(x_train_titanic, y_train_titanic)
+end_time = time.time()
+
+# CREDIT
+x_train_credit = x_train_credit.reset_index(drop=True).to_numpy()
+y_train_credit = y_train_credit.reset_index(drop=True).to_numpy()
+
+
+start_time = time.time()
+clf.fit(x_train_credit, y_train_credit)
+end_time = time.time()
+
+
+
+
 
 
 # Calculate the elapsed time
@@ -258,3 +265,132 @@ print(f"Test accuracy: {accuracy * 100:.2f}%")
 ###### HS-DT ######
 
 ###### PCA-HS-DT ######
+
+
+
+
+
+
+
+
+
+###############################################
+#
+# DEVELOPMENT AND TRAINING OF MODELS
+#
+###############################################
+
+# Download the dataset
+dataset_url = "https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz"
+data_dir = tf.keras.utils.get_file('oxford_pets', origin=dataset_url, extract=True)
+data_dir = pathlib.Path(data_dir).parent / "images"
+
+# Load dataset from the directory
+batch_size = 32
+img_height = 128
+img_width = 128
+
+dataset = image_dataset_from_directory(
+    data_dir,
+    image_size=(img_height, img_width),
+    batch_size=batch_size,
+    label_mode='int'  # Labels are categorical integers (0-36 for the breeds)
+)
+
+
+
+
+# List all image files
+image_files = [f for f in os.listdir(data_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
+
+# Load images
+images = []
+for file in image_files:
+    img_path = os.path.join(data_dir, file)
+    img = load_img(img_path, target_size=(128, 128))  # Resize images to 128x128 pixels
+    img_array = img_to_array(img) / 255.0  # Normalize pixel values to [0, 1]
+    images.append(img_array)
+
+# Convert to a numpy array
+images = np.array(images)
+
+print(f"Loaded {len(images)} images.")
+print(images.shape)
+
+
+
+
+
+
+
+
+
+###############################################
+#
+# PLOTS
+#
+###############################################
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+# Data
+data = {
+    'Dataset': ['CIFAR-10', 'Fashion-MNIST', 'Oxford Pets', 'Adult Income', 'Titanic', 'Credit Card'],
+    'DT': [3.23, 0.659, 4.56, 0.011, 0.0001, 0.0071],
+    'PCA-DT': [1.27, 1.57, 3.3, 0.012, 0.0001, 0.0071],
+    'HS-DT': [13.05, 2.65, 24.09, 0.023, 0.0016, 0.06],
+    'PCA-HS-DT': [8.37, 7.50, 22.13, 0.0805, 0.0018, 0.043]
+}
+
+# Create DataFrame
+df = pd.DataFrame(data)
+plt.figure(figsize=(6,6))
+df.boxplot()
+plt.ylabel("Time (minutes)")
+plt.xlabel("Method")
+plt.show()
+
+
+
+
+#####################################
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Sample data
+data = {
+    'Dataset': ['CIFAR-10', 'Fashion-MNIST', 'Oxford Pets', 'Adult Income', 'Titanic', 'Credit Card'],
+    'DT': [3.23, 0.659, 4.56, 0.011, 0.0001, 0.0071],
+    'PCA-DT': [1.27, 1.57, 3.3, 0.012, 0.0001, 0.0071],
+    'HS-DT': [13.05, 2.65, 24.09, 0.023, 0.0016, 0.06],
+    'PCA-HS-DT': [8.37, 7.50, 22.13, 0.0805, 0.0018, 0.043]
+}
+
+# Create DataFrame
+df = pd.DataFrame(data)
+
+# Set the style of seaborn
+sns.set(style="whitegrid")
+
+# Create the boxplot
+plt.figure(figsize=(10, 6))
+boxplot = sns.boxplot(data=df.iloc[:, 1:], palette="Set2", width=0.5)
+
+# Customizing the aesthetics
+
+plt.ylabel("Time (minutes)", fontsize=20)
+plt.xlabel("Method", fontsize=20)
+
+
+plt.xticks(fontsize=14)
+plt.yticks(fontsize=14)
+# Add gridlines for better readability
+plt.grid(axis='y', linestyle='--', alpha=0.9)
+
+# Show plot
+plt.savefig("boxplot")
+plt.show()

@@ -43,8 +43,8 @@ OXFORD_DIR = tf.keras.utils.get_file('oxford_pets', origin=OXFORD_URL, extract=T
 OXFORD_DIR = pathlib.Path(OXFORD_DIR).parent / "images"
 
 MODEL = DecisionTreeClassifier()
-MODEL = HSTreeClassifierCV()
-METHOD = 'DECISION TREE (CREDIT CARD)'
+#MODEL = HSTreeClassifierCV()
+METHOD = 'DT (OXFORD PETS)'
 
 
 ###############################################
@@ -81,7 +81,7 @@ def split_data(x, y):
 ###############################################
 with open('Results.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(['Decision Tree'])
+    writer.writerow([METHOD])
     writer.writerow(['Run',  'Accuracy', 'Time (s)'])
     for run in range(1, 6):
         # Loading dataset
@@ -96,16 +96,15 @@ with open('Results.csv', 'w', newline='') as csvfile:
         x_test_cifar_flat = x_test_cifar_flat / 255.0
 
         # PCA
-        # pca = PCA(0.99)
-        # pca.fit(x_train_credit)
-        # x_train_credit = pca.transform(x_train_credit)
-        # x_test_credit = pca.transform(x_test_credit)
+        pca = PCA(0.99)
+        pca.fit(x_train_cifar_flat)
+        x_train_cifar_flat = pca.transform(x_train_cifar_flat)
+        x_test_cifar_flat = pca.transform(x_test_cifar_flat)
 
         # Training model
         start_time = time.time()
         MODEL.fit(x_train_cifar_flat, y_train_cifar.ravel())
         end_time = time.time()
-        #accuracy(MODEL, x_test_cifar_flat, y_test_cifar, end_time, start_time)
 
         predictions = MODEL.predict(x_test_cifar_flat)
         accuracy = accuracy_score(y_test_cifar, predictions)
@@ -121,7 +120,7 @@ with open('Results.csv', 'w', newline='') as csvfile:
 ###############################################
 with open('Results.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(['Decision Tree (FASHION-MINST)'])
+    writer.writerow([METHOD])
     writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
         # Loading dataset
@@ -136,16 +135,15 @@ with open('Results.csv', 'a', newline='') as csvfile:
         x_test_fashion_flat = x_test_fashion_flat / 255.0
 
         # PCA
-        # pca = PCA(0.99)
-        # pca.fit(x_train_credit)
-        # x_train_credit = pca.transform(x_train_credit)
-        # x_test_credit = pca.transform(x_test_credit)
+        pca = PCA(0.99)
+        pca.fit(x_train_fashion_flat)
+        x_train_fashion_flat = pca.transform(x_train_fashion_flat)
+        x_test_fashion_flat = pca.transform(x_test_fashion_flat)
 
         # Training model
         start_time = time.time()
         MODEL.fit(x_train_fashion_flat, y_train_fashion.ravel())
         end_time = time.time()
-        #accuracy(MODEL, x_test_fashion_flat, y_test_fashion, end_time, start_time)
 
         predictions = MODEL.predict(x_test_fashion_flat)
         accuracy = accuracy_score(y_test_fashion, predictions)
@@ -159,6 +157,7 @@ with open('Results.csv', 'a', newline='') as csvfile:
 ###############################################
 with open('Results.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
+    writer.writerow([''])
     writer.writerow([METHOD])
     writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
@@ -191,10 +190,10 @@ with open('Results.csv', 'a', newline='') as csvfile:
         x_test_adult = scaler.transform(x_test_adult)
 
         # PCA
-        # pca = PCA(0.99)
-        # pca.fit(x_train_credit)
-        # x_train_credit = pca.transform(x_train_credit)
-        # x_test_credit = pca.transform(x_test_credit)
+        pca = PCA(0.99)
+        pca.fit(x_train_adult)
+        x_train_adult = pca.transform(x_train_adult)
+        x_test_adult = pca.transform(x_test_adult)
 
         # Training model
         start_time = time.time()
@@ -212,6 +211,7 @@ with open('Results.csv', 'a', newline='') as csvfile:
 ###############################################
 with open('Results.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
+    writer.writerow([])
     writer.writerow([METHOD])
     writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
@@ -231,10 +231,10 @@ with open('Results.csv', 'a', newline='') as csvfile:
         x_train_titanic, x_test_titanic, y_train_titanic, y_test_titanic = split_data(x_titanic, y_titanic)
 
         # PCA
-        # pca = PCA(0.99)
-        # pca.fit(x_train_credit)
-        # x_train_credit = pca.transform(x_train_credit)
-        # x_test_credit = pca.transform(x_test_credit)
+        pca = PCA(0.99)
+        pca.fit(x_train_titanic)
+        x_train_titanic = pca.transform(x_train_titanic)
+        x_test_titanic = pca.transform(x_test_titanic)
 
         # Training model
         start_time = time.time()
@@ -253,6 +253,7 @@ with open('Results.csv', 'a', newline='') as csvfile:
 ###############################################
 with open('Results.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
+    writer.writerow([])
     writer.writerow([METHOD])
     writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
@@ -266,10 +267,14 @@ with open('Results.csv', 'a', newline='') as csvfile:
         x_train_credit, x_test_credit, y_train_credit, y_test_credit = split_data(x_credit, y_credit)
 
         # PCA
-        # pca = PCA(0.99)
-        # pca.fit(x_train_credit)
-        # x_train_credit = pca.transform(x_train_credit)
-        # x_test_credit = pca.transform(x_test_credit)
+        pca = PCA(0.99)
+        pca.fit(x_train_credit)
+        x_train_credit = pca.transform(x_train_credit)
+        x_test_credit = pca.transform(x_test_credit)
+
+        # Converting pandas to numpy array
+        y_train_credit = np.array(y_train_credit)
+        y_test_credit = np.array(y_test_credit)
 
         # Training model
         start_time = time.time()

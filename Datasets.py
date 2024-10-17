@@ -38,13 +38,14 @@ ADULT_COLS = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marit
            'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss',
            'hours-per-week', 'native-country', 'income']
 
-OXFORD_URL = "https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz"
-OXFORD_DIR = tf.keras.utils.get_file('oxford_pets', origin=OXFORD_URL, extract=True)
-OXFORD_DIR = pathlib.Path(OXFORD_DIR).parent / "images"
+# OXFORD_URL = "https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz"
+# OXFORD_DIR = tf.keras.utils.get_file('oxford_pets', origin=OXFORD_URL, extract=True)
+# OXFORD_DIR = pathlib.Path(OXFORD_DIR).parent / "images"
 
-MODEL = DecisionTreeClassifier()
-#MODEL = HSTreeClassifierCV()
-METHOD = 'DT (OXFORD PETS)'
+#MODEL = DecisionTreeClassifier()
+
+MODEL = HSTreeClassifierCV() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
+METHOD = 'PCA-HS-DT (CREDIT CARD)'
 
 
 ###############################################
@@ -79,7 +80,7 @@ def split_data(x, y):
 # CIFAR-10
 #
 ###############################################
-with open('Results.csv', 'w', newline='') as csvfile:
+with open('Temp.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([METHOD])
     writer.writerow(['Run',  'Accuracy', 'Time (s)'])
@@ -118,8 +119,9 @@ with open('Results.csv', 'w', newline='') as csvfile:
 # FASHION-MINST
 #
 ###############################################
-with open('Results.csv', 'a', newline='') as csvfile:
+with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
+    writer.writerow([])
     writer.writerow([METHOD])
     writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
@@ -155,9 +157,9 @@ with open('Results.csv', 'a', newline='') as csvfile:
 # ADULT INCOME
 #
 ###############################################
-with open('Results.csv', 'a', newline='') as csvfile:
+with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow([''])
+    writer.writerow([])
     writer.writerow([METHOD])
     writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
@@ -209,7 +211,7 @@ with open('Results.csv', 'a', newline='') as csvfile:
 # TITANIC
 #
 ###############################################
-with open('Results.csv', 'a', newline='') as csvfile:
+with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([])
     writer.writerow([METHOD])
@@ -229,6 +231,12 @@ with open('Results.csv', 'a', newline='') as csvfile:
 
         # Splitting dataset
         x_train_titanic, x_test_titanic, y_train_titanic, y_test_titanic = split_data(x_titanic, y_titanic)
+
+        # Convert to numpy array if needed
+        x_train_titanic = x_train_titanic.reset_index(drop=True).to_numpy()
+        x_test_titanic = x_test_titanic.reset_index(drop=True).to_numpy()
+        y_train_titanic = y_train_titanic.reset_index(drop=True).to_numpy()
+        y_test_titanic = y_test_titanic.reset_index(drop=True).to_numpy()
 
         # PCA
         pca = PCA(0.99)
@@ -251,7 +259,7 @@ with open('Results.csv', 'a', newline='') as csvfile:
 # CREDIT CARD
 #
 ###############################################
-with open('Results.csv', 'a', newline='') as csvfile:
+with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([])
     writer.writerow([METHOD])
@@ -266,15 +274,20 @@ with open('Results.csv', 'a', newline='') as csvfile:
         # Splitting dataset
         x_train_credit, x_test_credit, y_train_credit, y_test_credit = split_data(x_credit, y_credit)
 
+
+        # Converting pandas to numpy array
+        x_train_credit = x_train_credit.reset_index(drop=True).to_numpy()
+        x_test_credit = x_test_credit.reset_index(drop=True).to_numpy()
+        y_train_credit = y_train_credit.reset_index(drop=True).to_numpy()
+        y_test_credit = y_test_credit.reset_index(drop=True).to_numpy()
+
+
         # PCA
         pca = PCA(0.99)
         pca.fit(x_train_credit)
         x_train_credit = pca.transform(x_train_credit)
         x_test_credit = pca.transform(x_test_credit)
 
-        # Converting pandas to numpy array
-        y_train_credit = np.array(y_train_credit)
-        y_test_credit = np.array(y_test_credit)
 
         # Training model
         start_time = time.time()
@@ -292,29 +305,29 @@ with open('Results.csv', 'a', newline='') as csvfile:
 #
 ###############################################
 # Loading dataset
-batch_size = 32
-img_height = 128
-img_width = 128
-dataset = image_dataset_from_directory(
-    OXFORD_DIR,
-    image_size=(img_height, img_width),
-    batch_size=batch_size,
-    label_mode='int'  # Labels are categorical integers (0-36 for the breeds)
-)
-
-# List all image files
-image_files = [f for f in os.listdir(OXFORD_DIR) if f.endswith(('.jpg', '.jpeg', '.png'))]
-
-# Load images
-images = []
-for file in image_files:
-    img_path = os.path.join(OXFORD_DIR, file)
-    img = load_img(img_path, target_size=(128, 128))  # Resize images to 128x128 pixels
-    img_array = img_to_array(img) / 255.0  # Normalize pixel values to [0, 1]
-    images.append(img_array)
-
-# Convert to a numpy array
-images = np.array(images)
+# batch_size = 32
+# img_height = 128
+# img_width = 128
+# dataset = image_dataset_from_directory(
+#     OXFORD_DIR,
+#     image_size=(img_height, img_width),
+#     batch_size=batch_size,
+#     label_mode='int'  # Labels are categorical integers (0-36 for the breeds)
+# )
+#
+# # List all image files
+# image_files = [f for f in os.listdir(OXFORD_DIR) if f.endswith(('.jpg', '.jpeg', '.png'))]
+#
+# # Load images
+# images = []
+# for file in image_files:
+#     img_path = os.path.join(OXFORD_DIR, file)
+#     img = load_img(img_path, target_size=(128, 128))  # Resize images to 128x128 pixels
+#     img_array = img_to_array(img) / 255.0  # Normalize pixel values to [0, 1]
+#     images.append(img_array)
+#
+# # Convert to a numpy array
+# images = np.array(images)
 
 # print(f"Loaded {len(images)} images.")
 # print(images.shape)
@@ -388,3 +401,6 @@ plt.grid(axis='y', linestyle='--', alpha=0.9)
 # Saving and showing boxplot
 #plt.savefig("boxplot")
 plt.show()
+
+
+

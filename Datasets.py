@@ -10,7 +10,7 @@ from sklearn import datasets
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.decomposition import PCA
-from imodels import HSTreeClassifierCV
+from imodels import HSTreeClassifierCV, HSTreeClassifier
 import matplotlib.pyplot as plt
 import seaborn as sns
 import zipfile
@@ -18,6 +18,7 @@ import os
 import pathlib
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from tensorflow.keras.preprocessing import image_dataset_from_directory
@@ -43,8 +44,9 @@ ADULT_COLS = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marit
 # OXFORD_DIR = pathlib.Path(OXFORD_DIR).parent / "images"
 
 #MODEL = DecisionTreeClassifier()
-
-MODEL = HSTreeClassifierCV() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
+#MODEL = HSTreeClassifierCV() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
+#MODEL = RandomForestClassifier()
+MODEL = HSTreeClassifier()
 METHOD = 'PCA-HS-DT (CREDIT CARD)'
 
 
@@ -159,7 +161,6 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 ###############################################
 with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow([])
     writer.writerow([METHOD])
     writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
@@ -344,63 +345,312 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 # PLOTS
 #
 ###############################################
-# Simple boxplot
-data_adult = {
-    'Dataset': ['CIFAR-10', 'Fashion-MNIST', 'Oxford Pets', 'Adult Income', 'Titanic', 'Credit Card'],
-    'DT': [3.23, 0.659, 4.56, 0.011, 0.0001, 0.0071],
-    'PCA-DT': [1.27, 1.57, 3.3, 0.012, 0.0001, 0.0071],
-    'HS-DT': [13.05, 2.65, 24.09, 0.023, 0.0016, 0.06],
-    'PCA-HS-DT': [8.37, 7.50, 22.13, 0.0805, 0.0018, 0.043]
-}
-
-# Create DataFrame
-df = pd.DataFrame(data_adult)
-
-# Creating figure
-plt.figure(figsize=(6,6))
-df.boxplot()
-
-# Labeling x and y axis
-plt.ylabel("Time (minutes)")
-plt.xlabel("Method")
-
-# Saving and showing boxplot
-#plt.savefig("boxplot")
-plt.show()
 
 # Fancy boxplot
-data_adult = {
-    'Dataset': ['CIFAR-10', 'Fashion-MNIST', 'Oxford Pets', 'Adult Income', 'Titanic', 'Credit Card'],
-    'DT': [3.23, 0.659, 4.56, 0.011, 0.0001, 0.0071],
-    'PCA-DT': [1.27, 1.57, 3.3, 0.012, 0.0001, 0.0071],
-    'HS-DT': [13.05, 2.65, 24.09, 0.023, 0.0016, 0.06],
-    'PCA-HS-DT': [8.37, 7.50, 22.13, 0.0805, 0.0018, 0.043]
+# data_adult = {
+#     'Dataset': ['CIFAR-10', 'Fashion-MNIST', 'Oxford Pets', 'Adult Income', 'Titanic', 'Credit Card'],
+#     'DT': [3.23, 0.659, 4.56, 0.011, 0.0001, 0.0071],
+#     'PCA-DT': [1.27, 1.57, 3.3, 0.012, 0.0001, 0.0071],
+#     'HS-DT': [13.05, 2.65, 24.09, 0.023, 0.0016, 0.06],
+#     'PCA-HS-DT': [8.37, 7.50, 22.13, 0.0805, 0.0018, 0.043]
+# }
+#
+# # Create DataFrame
+# df = pd.DataFrame(data_adult)
+#
+# # Set the style of seaborn
+# sns.set(style="whitegrid")
+#
+# # Create the boxplot
+# plt.figure(figsize=(10, 6))
+# boxplot = sns.boxplot(data=df.iloc[:, 1:], palette="Set2", width=0.5)
+#
+# # Labeling x and y axis
+# plt.ylabel("Time (minutes)", fontsize=20)
+# plt.xlabel("Method", fontsize=20)
+#
+# # Setting size of x and y ticks
+# plt.xticks(fontsize=14)
+# plt.yticks(fontsize=14)
+#
+# # Adding gridlines
+# plt.grid(axis='y', linestyle='--', alpha=0.9)
+#
+# # Saving and showing boxplot
+# #plt.savefig("boxplot")
+# plt.show()
+
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Manually input the times for each dataset and model (in seconds)
+time_data = {
+    'CIFAR-10': [[242.1991422, 241.5421028, 242.4317679, 240.107276, 239.3795531],
+                 [219.521008, 219.398421, 217.6687739, 223.4067731, 237.2773688],
+                 [547.0455508, 544.337544, 542.9848099, 545.2337132, 545.7758899],
+                 [301.5395989, 305.0823662, 304.612591, 305.078649, 303.4675562]],
+
+    'FASHION-MINST': [[85.07053995, 82.27442884, 86.89681196, 82.37714314, 81.27386975],
+                      [212.085438, 211.337795, 211.327845, 211.390029, 209.868541],
+                      [103.372396, 103.1430721, 102.9896231, 103.0515089, 103.5272992],
+                      [263.8968761, 264.0881269, 264.7886379, 264.333806, 264.1657717]],
+
+    'ADULT INCOME': [[2.232364893, 2.258303165, 2.254941225, 2.237604141, 2.246879339],
+                     [9.25217485, 9.00513578, 8.85312295, 8.83711314, 8.85314393],
+                     [0.715862036, 0.708870888, 0.707540989, 0.71313262, 0.715147972],
+                     [2.79746294, 2.772037983, 2.781803131, 2.767557144, 2.761221886]],
+
+    'TITANIC': [[0.158365965, 0.153714895, 0.167060137, 0.170248032, 0.146846771],
+                [0.174762964, 0.174715996, 0.178793907, 0.177582026, 0.169512987],
+                [0.031949043, 0.026435852, 0.024561167, 0.02679491, 0.025578976],
+                [0.053377151, 0.026199102, 0.028033018, 0.025827885, 0.027102947]],
+
+    'CREDIT CARD': [[7.067342043, 6.986837149, 7.351256847, 7.211401939, 6.985906363],
+                    [8.923218966, 8.954082966, 8.976350307, 9.06367588, 8.916848898],
+                    [2.170444965, 2.165299892, 2.173708916, 2.174731016, 2.199632883],
+                    [1.542072773, 1.548459053, 1.551234007, 1.541230202, 1.541714907]]
 }
 
-# Create DataFrame
-df = pd.DataFrame(data_adult)
+# Convert seconds to minutes by dividing by 60
+#time_data_minutes = {dataset: [[t / 60 for t in times] for times in models] for dataset, models in time_data.items()}
 
-# Set the style of seaborn
+# Prepare the data for seaborn
+datasets = []
+models = []
+times = []
+
+for dataset, data in time_data_minutes.items():
+    for i, model_times in enumerate(data):
+        model_name = ['RF', 'PCA-RF', 'HS-RF', 'PCA-HS-RF'][i]
+        datasets.extend([dataset] * len(model_times))
+        models.extend([model_name] * len(model_times))
+        times.extend(model_times)
+
+# Create a DataFrame
+df = pd.DataFrame({
+    'Dataset': datasets,
+    'Model': models,
+    'Time (min)': times
+})
+
+# Plot individual boxplots for each dataset
 sns.set(style="whitegrid")
 
-# Create the boxplot
-plt.figure(figsize=(10, 6))
-boxplot = sns.boxplot(data=df.iloc[:, 1:], palette="Set2", width=0.5)
+# Unique datasets
+unique_datasets = df['Dataset'].unique()
 
-# Labeling x and y axis
-plt.ylabel("Time (minutes)", fontsize=20)
-plt.xlabel("Method", fontsize=20)
+# Loop through each dataset and create individual plots
+for dataset in unique_datasets:
+    plt.figure(figsize=(5, 7))  # Adjust figure size to make plots visually appealing
 
-# Setting size of x and y ticks
-plt.xticks(fontsize=14)
-plt.yticks(fontsize=14)
+    # Filter data for the current dataset
+    data_filtered = df[df['Dataset'] == dataset]
 
-# Adding gridlines
-plt.grid(axis='y', linestyle='--', alpha=0.9)
+    # Create the boxplot
+    sns.boxplot(x='Model', y='Time (min)', data=data_filtered, width=0.6)  # Wider boxes
 
-# Saving and showing boxplot
-#plt.savefig("boxplot")
+    # Set the title
+    plt.title(f'Boxplot of Time (min) for {dataset}', fontsize=16)
+
+    # Adjust y-axis limits (optional, remove or modify as necessary)
+    plt.ylim(0, None)
+
+    # Improve spacing
+    plt.tight_layout()
+
+    # Show each plot separately
+    plt.show()
+
+
+
+
+
+
+
+
+import matplotlib.pyplot as plt
+
+# Data
+data = {
+    'CIFAR-10': [
+        [242.1991422, 241.5421028, 242.4317679, 240.107276, 239.3795531],
+        [219.521008, 219.398421, 217.6687739, 223.4067731, 237.2773688],
+        [547.0455508, 544.337544, 542.9848099, 545.2337132, 545.7758899],
+        [301.5395989, 305.0823662, 304.612591, 305.078649, 303.4675562]
+    ]
+}
+
+# Create boxplot
+plt.figure(figsize=(8, 15))
+plt.boxplot(data['CIFAR-10'], patch_artist=True)
+
+# Customize plot
+plt.title('CIFAR-10')
+plt.xlabel('Model')
+plt.ylabel('Time')
+plt.xticks([1, 2, 3, 4], ['RF', 'PCA-RF', 'HS-RF', 'PCA-HS-RF'])
+
+# Show plot
 plt.show()
+
+
+
+
+
+
+####################
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Manually input the times for each dataset and model (in seconds)
+time_data = {
+    'CIFAR-10': [[242.1991422, 241.5421028, 242.4317679, 240.107276, 239.3795531],
+                 [219.521008, 219.398421, 217.6687739, 223.4067731, 237.2773688],
+                 [547.0455508, 544.337544, 542.9848099, 545.2337132, 545.7758899],
+                 [301.5395989, 305.0823662, 304.612591, 305.078649, 303.4675562]],
+
+    'FASHION-MINST': [[85.07053995, 82.27442884, 86.89681196, 82.37714314, 81.27386975],
+                      [212.085438, 211.337795, 211.327845, 211.390029, 209.868541],
+                      [103.372396, 103.1430721, 102.9896231, 103.0515089, 103.5272992],
+                      [263.8968761, 264.0881269, 264.7886379, 264.333806, 264.1657717]],
+
+    'ADULT INCOME': [[2.232364893, 2.258303165, 2.254941225, 2.237604141, 2.246879339],
+                     [9.25217485, 9.00513578, 8.85312295, 8.83711314, 8.85314393],
+                     [0.715862036, 0.708870888, 0.707540989, 0.71313262, 0.715147972],
+                     [2.79746294, 2.772037983, 2.781803131, 2.767557144, 2.761221886]],
+
+    'TITANIC': [[0.158365965, 0.153714895, 0.167060137, 0.170248032, 0.146846771],
+                [0.174762964, 0.174715996, 0.178793907, 0.177582026, 0.169512987],
+                [0.031949043, 0.026435852, 0.024561167, 0.02679491, 0.025578976],
+                [0.053377151, 0.026199102, 0.028033018, 0.025827885, 0.027102947]],
+
+    'CREDIT CARD': [[7.067342043, 6.986837149, 7.351256847, 7.211401939, 6.985906363],
+                    [8.923218966, 8.954082966, 8.976350307, 9.06367588, 8.916848898],
+                    [2.170444965, 2.165299892, 2.173708916, 2.174731016, 2.199632883],
+                    [1.542072773, 1.548459053, 1.551234007, 1.541230202, 1.541714907]]
+}
+
+# Convert seconds to minutes by dividing by 60
+time_data_minutes = {dataset: [[t / 60 for t in times] for times in models] for dataset, models in time_data.items()}
+
+# Prepare the data for seaborn
+datasets = []
+models = []
+times = []
+
+for dataset, data in time_data_minutes.items():
+    for i, model_times in enumerate(data):
+        model_name = ['RF', 'PCA-RF', 'HS-RF', 'PCA-HS-RF'][i]
+        datasets.extend([dataset] * len(model_times))
+        models.extend([model_name] * len(model_times))
+        times.extend(model_times)
+
+# Create a DataFrame
+df = pd.DataFrame({
+    'Dataset': datasets,
+    'Model': models,
+    'Time (min)': times
+})
+
+# Plot boxplots for each dataset
+sns.set(style="whitegrid")
+g = sns.catplot(x="Model", y="Time (min)", col="Dataset", data=df, kind="box", height=4, aspect=0.7)
+g.set_titles("{col_name}")
+
+# Display the plot
+plt.tight_layout()
+plt.savefig("One_Fig")
+plt.show()
+
+
+
+############
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Manually input the times for each dataset and model (in seconds)
+time_data = {
+    'CIFAR-10': [[242.1991422, 241.5421028, 242.4317679, 240.107276, 239.3795531],
+                 [219.521008, 219.398421, 217.6687739, 223.4067731, 237.2773688],
+                 [547.0455508, 544.337544, 542.9848099, 545.2337132, 545.7758899],
+                 [301.5395989, 305.0823662, 304.612591, 305.078649, 303.4675562]],
+
+    'FASHION-MINST': [[85.07053995, 82.27442884, 86.89681196, 82.37714314, 81.27386975],
+                      [212.085438, 211.337795, 211.327845, 211.390029, 209.868541],
+                      [103.372396, 103.1430721, 102.9896231, 103.0515089, 103.5272992],
+                      [263.8968761, 264.0881269, 264.7886379, 264.333806, 264.1657717]],
+
+    'ADULT INCOME': [[2.232364893, 2.258303165, 2.254941225, 2.237604141, 2.246879339],
+                     [9.25217485, 9.00513578, 8.85312295, 8.83711314, 8.85314393],
+                     [0.715862036, 0.708870888, 0.707540989, 0.71313262, 0.715147972],
+                     [2.79746294, 2.772037983, 2.781803131, 2.767557144, 2.761221886]],
+
+    'TITANIC': [[0.158365965, 0.153714895, 0.167060137, 0.170248032, 0.146846771],
+                [0.174762964, 0.174715996, 0.178793907, 0.177582026, 0.169512987],
+                [0.031949043, 0.026435852, 0.024561167, 0.02679491, 0.025578976],
+                [0.053377151, 0.026199102, 0.028033018, 0.025827885, 0.027102947]],
+
+    'CREDIT CARD': [[7.067342043, 6.986837149, 7.351256847, 7.211401939, 6.985906363],
+                    [8.923218966, 8.954082966, 8.976350307, 9.06367588, 8.916848898],
+                    [2.170444965, 2.165299892, 2.173708916, 2.174731016, 2.199632883],
+                    [1.542072773, 1.548459053, 1.551234007, 1.541230202, 1.541714907]]
+}
+
+# Convert seconds to minutes by dividing by 60
+time_data_minutes = {dataset: [[t / 60 for t in times] for times in models] for dataset, models in time_data.items()}
+
+# Prepare the data for seaborn
+datasets = []
+models = []
+times = []
+
+for dataset, data in time_data_minutes.items():
+    for i, model_times in enumerate(data):
+        model_name = ['RF', 'PCA-RF', 'HS-RF', 'PCA-HS-RF'][i]
+        datasets.extend([dataset] * len(model_times))
+        models.extend([model_name] * len(model_times))
+        times.extend(model_times)
+
+# Create a DataFrame
+df = pd.DataFrame({
+    'Dataset': datasets,
+    'Model': models,
+    'Time (min)': times
+})
+
+# Plot individual boxplots for each dataset
+sns.set(style="whitegrid")
+
+# Unique datasets
+unique_datasets = df['Dataset'].unique()
+
+# Loop through each dataset and create individual plots
+for dataset in unique_datasets:
+    plt.figure(figsize=(8, 6))  # Adjust figure size to make plots visually appealing
+
+    # Filter data for the current dataset
+    data_filtered = df[df['Dataset'] == dataset]
+
+    # Create the boxplot
+    sns.boxplot(x='Model', y='Time (min)', data=data_filtered, width=0.6)  # Wider boxes
+
+    # Set the title
+    plt.title(f'Boxplot of Time (min) for {dataset}', fontsize=16)
+
+    # Adjust y-axis limits (optional, remove or modify as necessary)
+    plt.ylim(0, None)
+
+    # Improve spacing
+    plt.tight_layout()
+
+    # Show each plot separately
+    plt.savefig(f"Figure_{dataset}")
+    plt.show()
+
 
 
 

@@ -1,8 +1,8 @@
-###############################################
+###################################################################
 #
 # LIBRARIES
 #
-###############################################
+###################################################################
 import csv
 import tensorflow as tf
 from tensorflow.keras.datasets import cifar10, fashion_mnist
@@ -10,7 +10,7 @@ from sklearn import datasets
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.decomposition import PCA
-from imodels import HSTreeClassifierCV, HSTreeClassifier
+from imodels import HSTreeClassifier
 import matplotlib.pyplot as plt
 import seaborn as sns
 import zipfile
@@ -27,11 +27,15 @@ import time
 import numpy as np
 
 
-###############################################
+
+
+
+
+###################################################################
 #
 # URL'S FOR DATASETS
 #
-###############################################
+###################################################################
 TITANIC_URL = 'https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv'
 CREDIT_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases/00350/default%20of%20credit%20card%20clients.xls'
 ADULT_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
@@ -44,17 +48,18 @@ ADULT_COLS = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marit
 # OXFORD_DIR = pathlib.Path(OXFORD_DIR).parent / "images"
 
 #MODEL = DecisionTreeClassifier()
-#MODEL = HSTreeClassifierCV() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
 #MODEL = RandomForestClassifier()
-MODEL = HSTreeClassifier()
-METHOD = 'PCA-HS-DT (CREDIT CARD)'
+#MODEL = HSTreeClassifier() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
+ENSEMBLE = RandomForestClassifier()
+MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
+METHOD = 'RF (CREDIT CARD)'
 
 
-###############################################
+###################################################################
 # 
 # FUNCTIONS
 #
-###############################################
+###################################################################
 # Loading tabular datasets
 def load_data_tabular(url):
     if url.endswith('.csv'):
@@ -77,11 +82,11 @@ def split_data(x, y):
     return x_train, x_test, y_train, y_test
 
 
-###############################################
+###################################################################
 #
 # CIFAR-10
 #
-###############################################
+###################################################################
 with open('Temp.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([METHOD])
@@ -116,11 +121,11 @@ with open('Temp.csv', 'w', newline='') as csvfile:
 
 
 
-###############################################
+###################################################################
 #
 # FASHION-MINST
 #
-###############################################
+###################################################################
 with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([])
@@ -154,11 +159,11 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         writer.writerow([run, accuracy, (end_time - start_time)])
 
 
-###############################################
+###################################################################
 #
 # ADULT INCOME
 #
-###############################################
+###################################################################
 with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([METHOD])
@@ -207,11 +212,11 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         accuracy = accuracy_score(y_test_adult, predictions)
         writer.writerow([run, accuracy, (end_time - start_time)])
 
-###############################################
+###################################################################
 #
 # TITANIC
 #
-###############################################
+###################################################################
 with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([])
@@ -255,11 +260,11 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         writer.writerow([run, accuracy, (end_time - start_time)])
 
 
-###############################################
+###################################################################
 #
 # CREDIT CARD
 #
-###############################################
+###################################################################
 with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([])
@@ -300,11 +305,11 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         writer.writerow([run, accuracy, (end_time - start_time)])
 
 
-###############################################
+###################################################################
 #
 # OXFORD PETS
 #
-###############################################
+###################################################################
 # Loading dataset
 # batch_size = 32
 # img_height = 128
@@ -340,47 +345,11 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 # x_test_credit = pca.transform(x_test_credit)
 
 
-###############################################
+###################################################################
 #
 # PLOTS
 #
-###############################################
-
-# Fancy boxplot
-# data_adult = {
-#     'Dataset': ['CIFAR-10', 'Fashion-MNIST', 'Oxford Pets', 'Adult Income', 'Titanic', 'Credit Card'],
-#     'DT': [3.23, 0.659, 4.56, 0.011, 0.0001, 0.0071],
-#     'PCA-DT': [1.27, 1.57, 3.3, 0.012, 0.0001, 0.0071],
-#     'HS-DT': [13.05, 2.65, 24.09, 0.023, 0.0016, 0.06],
-#     'PCA-HS-DT': [8.37, 7.50, 22.13, 0.0805, 0.0018, 0.043]
-# }
-#
-# # Create DataFrame
-# df = pd.DataFrame(data_adult)
-#
-# # Set the style of seaborn
-# sns.set(style="whitegrid")
-#
-# # Create the boxplot
-# plt.figure(figsize=(10, 6))
-# boxplot = sns.boxplot(data=df.iloc[:, 1:], palette="Set2", width=0.5)
-#
-# # Labeling x and y axis
-# plt.ylabel("Time (minutes)", fontsize=20)
-# plt.xlabel("Method", fontsize=20)
-#
-# # Setting size of x and y ticks
-# plt.xticks(fontsize=14)
-# plt.yticks(fontsize=14)
-#
-# # Adding gridlines
-# plt.grid(axis='y', linestyle='--', alpha=0.9)
-#
-# # Saving and showing boxplot
-# #plt.savefig("boxplot")
-# plt.show()
-
-
+###################################################################
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -462,39 +431,6 @@ for dataset in unique_datasets:
 
     # Show each plot separately
     plt.show()
-
-
-
-
-
-
-
-
-import matplotlib.pyplot as plt
-
-# Data
-data = {
-    'CIFAR-10': [
-        [242.1991422, 241.5421028, 242.4317679, 240.107276, 239.3795531],
-        [219.521008, 219.398421, 217.6687739, 223.4067731, 237.2773688],
-        [547.0455508, 544.337544, 542.9848099, 545.2337132, 545.7758899],
-        [301.5395989, 305.0823662, 304.612591, 305.078649, 303.4675562]
-    ]
-}
-
-# Create boxplot
-plt.figure(figsize=(8, 15))
-plt.boxplot(data['CIFAR-10'], patch_artist=True)
-
-# Customize plot
-plt.title('CIFAR-10')
-plt.xlabel('Model')
-plt.ylabel('Time')
-plt.xticks([1, 2, 3, 4], ['RF', 'PCA-RF', 'HS-RF', 'PCA-HS-RF'])
-
-# Show plot
-plt.show()
-
 
 
 

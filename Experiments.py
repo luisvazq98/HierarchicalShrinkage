@@ -120,7 +120,6 @@ with open('Temp.csv', 'w', newline='') as csvfile:
 
 
 
-
 ###################################################################
 #
 # FASHION-MINST
@@ -157,6 +156,7 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         predictions = MODEL.predict(x_test_fashion_flat)
         accuracy = accuracy_score(y_test_fashion, predictions)
         writer.writerow([run, accuracy, (end_time - start_time)])
+
 
 
 ###################################################################
@@ -212,6 +212,8 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         accuracy = accuracy_score(y_test_adult, predictions)
         writer.writerow([run, accuracy, (end_time - start_time)])
 
+
+
 ###################################################################
 #
 # TITANIC
@@ -260,6 +262,7 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         writer.writerow([run, accuracy, (end_time - start_time)])
 
 
+
 ###################################################################
 #
 # CREDIT CARD
@@ -303,6 +306,7 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         predictions = MODEL.predict(x_test_credit)
         accuracy = accuracy_score(y_test_credit, predictions)
         writer.writerow([run, accuracy, (end_time - start_time)])
+
 
 
 ###################################################################
@@ -584,7 +588,3 @@ for dataset in unique_datasets:
     # Show each plot separately
     plt.savefig(f"Figure_{dataset}")
     plt.show()
-
-
-
-

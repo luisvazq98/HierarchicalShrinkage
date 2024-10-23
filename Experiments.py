@@ -47,16 +47,25 @@ ADULT_COLS = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marit
 # OXFORD_DIR = tf.keras.utils.get_file('oxford_pets', origin=OXFORD_URL, extract=True)
 # OXFORD_DIR = pathlib.Path(OXFORD_DIR).parent / "images"
 
+
+###################################################################
+#
+# MODELS
+#
+###################################################################
 #MODEL = DecisionTreeClassifier()
-#MODEL = RandomForestClassifier()
+MODEL = RandomForestClassifier()
 #MODEL = HSTreeClassifier() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
-ENSEMBLE = RandomForestClassifier()
-MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
-METHOD = 'RF (CREDIT CARD)'
+
+# ENSEMBLE = RandomForestClassifier()
+# MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
+
+
+METHOD = 'PCA-RF (CIFAR-10)'
 
 
 ###################################################################
-# 
+#
 # FUNCTIONS
 #
 ###################################################################
@@ -127,7 +136,6 @@ with open('Temp.csv', 'w', newline='') as csvfile:
 ###################################################################
 with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow([])
     writer.writerow([METHOD])
     writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
@@ -143,10 +151,10 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         x_test_fashion_flat = x_test_fashion_flat / 255.0
 
         # PCA
-        pca = PCA(0.99)
-        pca.fit(x_train_fashion_flat)
-        x_train_fashion_flat = pca.transform(x_train_fashion_flat)
-        x_test_fashion_flat = pca.transform(x_test_fashion_flat)
+        # pca = PCA(0.99)
+        # pca.fit(x_train_fashion_flat)
+        # x_train_fashion_flat = pca.transform(x_train_fashion_flat)
+        # x_test_fashion_flat = pca.transform(x_test_fashion_flat)
 
         # Training model
         start_time = time.time()
@@ -166,6 +174,7 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 ###################################################################
 with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
+    writer.writerow([])
     writer.writerow([METHOD])
     writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
@@ -198,10 +207,10 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         x_test_adult = scaler.transform(x_test_adult)
 
         # PCA
-        pca = PCA(0.99)
-        pca.fit(x_train_adult)
-        x_train_adult = pca.transform(x_train_adult)
-        x_test_adult = pca.transform(x_test_adult)
+        # pca = PCA(0.99)
+        # pca.fit(x_train_adult)
+        # x_train_adult = pca.transform(x_train_adult)
+        # x_test_adult = pca.transform(x_test_adult)
 
         # Training model
         start_time = time.time()
@@ -247,10 +256,10 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         y_test_titanic = y_test_titanic.reset_index(drop=True).to_numpy()
 
         # PCA
-        pca = PCA(0.99)
-        pca.fit(x_train_titanic)
-        x_train_titanic = pca.transform(x_train_titanic)
-        x_test_titanic = pca.transform(x_test_titanic)
+        # pca = PCA(0.99)
+        # pca.fit(x_train_titanic)
+        # x_train_titanic = pca.transform(x_train_titanic)
+        # x_test_titanic = pca.transform(x_test_titanic)
 
         # Training model
         start_time = time.time()
@@ -292,10 +301,10 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 
 
         # PCA
-        pca = PCA(0.99)
-        pca.fit(x_train_credit)
-        x_train_credit = pca.transform(x_train_credit)
-        x_test_credit = pca.transform(x_test_credit)
+        # pca = PCA(0.99)
+        # pca.fit(x_train_credit)
+        # x_train_credit = pca.transform(x_train_credit)
+        # x_test_credit = pca.transform(x_test_credit)
 
 
         # Training model

@@ -57,7 +57,7 @@ MODEL = RandomForestClassifier()
 # MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
 
 
-METHOD = 'RF (ADULT INCOME)'
+METHOD = 'RF (CREDIT CARD)'
 
 
 ###################################################################
@@ -235,8 +235,9 @@ with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([])
     writer.writerow([METHOD])
-    writer.writerow(['Run', 'Accuracy', 'Time (s)'])
-    for run in range(1, 6):
+    writer.writerow(['Average Accuracy', 'Time (min)'])
+    runs = pd.DataFrame(columns=['Accuracy', 'Time (min)'])
+    for run in range(0, 100):
         # Loading dataset
         data_titanic = load_data_tabular(TITANIC_URL)
         data_titanic.drop(columns=['PassengerId', 'Cabin', 'Ticket', 'Name'], inplace=True)
@@ -259,10 +260,10 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         y_test_titanic = y_test_titanic.reset_index(drop=True).to_numpy()
 
         # PCA
-        pca = PCA(0.99)
-        pca.fit(x_train_titanic)
-        x_train_titanic = pca.transform(x_train_titanic)
-        x_test_titanic = pca.transform(x_test_titanic)
+        # pca = PCA(0.99)
+        # pca.fit(x_train_titanic)
+        # x_train_titanic = pca.transform(x_train_titanic)
+        # x_test_titanic = pca.transform(x_test_titanic)
 
         # Training model
         start_time = time.time()
@@ -270,8 +271,11 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         end_time = time.time()
 
         predictions = MODEL.predict(x_test_titanic)
-        accuracy = accuracy_score(y_test_titanic, predictions)
-        writer.writerow([run, accuracy, (end_time - start_time)])
+        accuracy = (accuracy_score(y_test_titanic, predictions)) * 100
+        runs.loc[run] = accuracy, ((end_time - start_time) / 60)
+
+
+    writer.writerow([runs['Accuracy'].mean(), runs['Time (min)'].mean()])
 
 
 
@@ -284,7 +288,8 @@ with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([])
     writer.writerow([METHOD])
-    writer.writerow(['Run', 'Accuracy', 'Time (s)'])
+    writer.writerow(['Average Accuracy', 'Time (min)'])
+    runs = pd.DataFrame(columns=['Accuracy', 'Time (min)'])
     for run in range(1, 6):
         # Loading dataset
         data_credit = load_data_tabular(CREDIT_URL)
@@ -316,8 +321,11 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         end_time = time.time()
 
         predictions = MODEL.predict(x_test_credit)
-        accuracy = accuracy_score(y_test_credit, predictions)
-        writer.writerow([run, accuracy, (end_time - start_time)])
+        accuracy = (accuracy_score(y_test_credit, predictions)) * 100
+        runs.loc[run] = accuracy, ((end_time - start_time) / 60)
+
+
+    writer.writerow([runs['Accuracy'].mean(), runs['Time (min)'].mean()])
 
 
 

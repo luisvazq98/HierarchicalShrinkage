@@ -50,14 +50,14 @@ ADULT_COLS = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marit
 #
 ###################################################################
 #MODEL = DecisionTreeClassifier()
-#MODEL = RandomForestClassifier()
+MODEL = RandomForestClassifier()
 #MODEL = HSTreeClassifier() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
 
-ENSEMBLE = RandomForestClassifier()
-MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
+# ENSEMBLE = RandomForestClassifier()
+# MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
 
 
-METHOD = 'PCA-HS-RF (CREDIT CARD)'
+METHOD = 'RF (ADULT INCOME)'
 
 
 ###################################################################
@@ -169,12 +169,13 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 # ADULT INCOME
 #
 ###################################################################
-with open('Temp.csv', 'a', newline='') as csvfile:
+with open('Temp.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([])
     writer.writerow([METHOD])
-    writer.writerow(['Run', 'Accuracy', 'Time (s)'])
-    for run in range(1, 6):
+    writer.writerow(['Average Accuracy', 'Time (min)'])
+    runs = pd.DataFrame(columns=['Accuracy', 'Time (min)'])
+    for run in range(0, 100):
         # Loading dataset
         data_adult = pd.read_csv(ADULT_URL, names=ADULT_COLS, sep=',\s', engine='python')
 
@@ -197,6 +198,8 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 
         x_train_adult = x_train_adult.reset_index(drop=True).to_numpy()
         y_train_adult = y_train_adult.reset_index(drop=True).to_numpy()
+        x_test_adult = x_test_adult.reset_index(drop=True).to_numpy()
+        y_test_adult = y_test_adult.reset_index(drop=True).to_numpy()
 
         # Standard Scaler
         scaler = StandardScaler()
@@ -204,10 +207,10 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         x_test_adult = scaler.transform(x_test_adult)
 
         # PCA
-        pca = PCA(0.99)
-        pca.fit(x_train_adult)
-        x_train_adult = pca.transform(x_train_adult)
-        x_test_adult = pca.transform(x_test_adult)
+        # pca = PCA(0.99)
+        # pca.fit(x_train_adult)
+        # x_train_adult = pca.transform(x_train_adult)
+        # x_test_adult = pca.transform(x_test_adult)
 
         # Training model
         start_time = time.time()
@@ -215,8 +218,11 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         end_time = time.time()
 
         predictions = MODEL.predict(x_test_adult)
-        accuracy = accuracy_score(y_test_adult, predictions)
-        writer.writerow([run, accuracy, (end_time - start_time)])
+        accuracy = (accuracy_score(y_test_adult, predictions)) * 100
+        runs.loc[run] = accuracy, ((end_time - start_time) / 60)
+
+
+    writer.writerow([runs['Accuracy'].mean(), runs['Time (min)'].mean()])
 
 
 

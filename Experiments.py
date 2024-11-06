@@ -57,7 +57,7 @@ MODEL = RandomForestClassifier()
 # MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
 
 
-METHOD = 'RF (CREDIT CARD)'
+METHOD = 'PCA-RF (CREDIT CARD)'
 
 
 ###################################################################
@@ -169,7 +169,7 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 # ADULT INCOME
 #
 ###################################################################
-with open('Temp.csv', 'w', newline='') as csvfile:
+with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([])
     writer.writerow([METHOD])
@@ -207,10 +207,10 @@ with open('Temp.csv', 'w', newline='') as csvfile:
         x_test_adult = scaler.transform(x_test_adult)
 
         # PCA
-        # pca = PCA(0.99)
-        # pca.fit(x_train_adult)
-        # x_train_adult = pca.transform(x_train_adult)
-        # x_test_adult = pca.transform(x_test_adult)
+        pca = PCA(0.99)
+        pca.fit(x_train_adult)
+        x_train_adult = pca.transform(x_train_adult)
+        x_test_adult = pca.transform(x_test_adult)
 
         # Training model
         start_time = time.time()
@@ -221,9 +221,8 @@ with open('Temp.csv', 'w', newline='') as csvfile:
         accuracy = (accuracy_score(y_test_adult, predictions)) * 100
         runs.loc[run] = accuracy, ((end_time - start_time) / 60)
 
-
     writer.writerow([runs['Accuracy'].mean(), runs['Time (min)'].mean()])
-
+    writer.writerow([runs['Accuracy'].std(), runs['Time (min)'].std()])
 
 
 ###################################################################
@@ -260,10 +259,10 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         y_test_titanic = y_test_titanic.reset_index(drop=True).to_numpy()
 
         # PCA
-        # pca = PCA(0.99)
-        # pca.fit(x_train_titanic)
-        # x_train_titanic = pca.transform(x_train_titanic)
-        # x_test_titanic = pca.transform(x_test_titanic)
+        pca = PCA(0.99)
+        pca.fit(x_train_titanic)
+        x_train_titanic = pca.transform(x_train_titanic)
+        x_test_titanic = pca.transform(x_test_titanic)
 
         # Training model
         start_time = time.time()
@@ -276,6 +275,7 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 
 
     writer.writerow([runs['Accuracy'].mean(), runs['Time (min)'].mean()])
+    writer.writerow([runs['Accuracy'].std(), runs['Time (min)'].std()])
 
 
 
@@ -290,7 +290,7 @@ with open('Temp.csv', 'a', newline='') as csvfile:
     writer.writerow([METHOD])
     writer.writerow(['Average Accuracy', 'Time (min)'])
     runs = pd.DataFrame(columns=['Accuracy', 'Time (min)'])
-    for run in range(1, 6):
+    for run in range(0, 100):
         # Loading dataset
         data_credit = load_data_tabular(CREDIT_URL)
         data_credit.drop(columns=['ID', 'SEX'], inplace=True)
@@ -326,6 +326,7 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 
 
     writer.writerow([runs['Accuracy'].mean(), runs['Time (min)'].mean()])
+    writer.writerow([runs['Accuracy'].std(), runs['Time (min)'].std()])
 
 
 
@@ -608,3 +609,5 @@ for dataset in unique_datasets:
     # Show each plot separately
     plt.savefig(f"Figure_{dataset}")
     plt.show()
+
+

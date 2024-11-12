@@ -50,14 +50,15 @@ ADULT_COLS = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marit
 #
 ###################################################################
 #MODEL = DecisionTreeClassifier()
-MODEL = RandomForestClassifier()
-#MODEL = HSTreeClassifier() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
-
-# ENSEMBLE = RandomForestClassifier()
-# MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
+#MODEL = RandomForestClassifier()
+# MODEL = HSTreeClassifier() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
 
 
-METHOD = 'PCA-RF (CREDIT CARD)'
+ENSEMBLE = RandomForestClassifier()
+MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
+
+
+METHOD = 'PCA-HS-RF (CREDIT CARD)'
 
 
 ###################################################################
@@ -207,10 +208,10 @@ with open('Temp.csv', 'a', newline='') as csvfile:
         x_test_adult = scaler.transform(x_test_adult)
 
         # PCA
-        pca = PCA(0.99)
-        pca.fit(x_train_adult)
-        x_train_adult = pca.transform(x_train_adult)
-        x_test_adult = pca.transform(x_test_adult)
+        # pca = PCA(0.99)
+        # pca.fit(x_train_adult)
+        # x_train_adult = pca.transform(x_train_adult)
+        # x_test_adult = pca.transform(x_test_adult)
 
         # Training model
         start_time = time.time()

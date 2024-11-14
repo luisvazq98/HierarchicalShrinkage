@@ -1,61 +1,28 @@
-,,,,,,,,
-,RF (ADULT INCOME),,,RF (TITANIC),,,RF (CREDIT CARD),
-,Average Accuracy,Time (min),,Average Accuracy,Time (min),,Average Accuracy,Time (min)
-,85.4480358,0.020264177,,81.26256983,0.000860387,,81.37333333,0.067310261
-,0.127562305,0.0002051,,0.878558242,3.26E-05,,0.140804965,0.000514155
-,,,,,,,,
-,PCA-RF (ADULT INCOME),,,PCA-RF (TITANIC),,,PCA-RF (CREDIT CARD),
-,Average Accuracy,Time (min),,Average Accuracy,Time (min),,Average Accuracy,Time (min)
-,83.62738273,0.085214672,,69.82681564,0.000981052,,78.00966667,0.085423859
-,0.172356234,0.000573844,,0.91399562,8.97E-05,,0.164193434,0.000976205
-,,,,,,,,
-,HS-RF (ADULT INCOME),,,HS-RF (TITANIC),,,HS-RF (CREDIT CARD),
-,Average Accuracy,Time (min),,Average Accuracy,Time (min),,Average Accuracy,Time (min)
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,PCA-HS-RF (ADULT INCOME),,,PCA-HS-RF (TITANIC),,,PCA-HS-RF (CREDIT CARD),
-,Average Accuracy,Time (min),,Average Accuracy,Time (min),,Average Accuracy,Time (min)
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
-,,,,,,,,
+HS-RF (ADULT INCOME),
+Average Accuracy,Time (min)
+79.21929388,0.16152839
+0.339087504,0.001660563
+,
+HS-RF (TITANIC),
+Average Accuracy,Time (min)
+77.5698324,0.007904378
+1.233645881,0.000169129
+,
+HS-RF (CREDIT CARD),
+Average Accuracy,Time (min)
+57.9225,0.237536623
+0.627415087,0.006686723
+PCA-HS-RF (ADULT INCOME),
+Average Accuracy,Time (min)
+63.61561412,0.235416606
+0.536255723,0.003962699
+,
+PCA-HS-RF (TITANIC),
+Average Accuracy,Time (min)
+63.24022346,0.008877754
+1.584112079,0.000230654
+,
+PCA-HS-RF (CREDIT CARD),
+Average Accuracy,Time (min)
+52.04133333,0.27320139
+0.684781171,0.010186308

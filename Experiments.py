@@ -49,16 +49,16 @@ ADULT_COLS = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marit
 # MODELS
 #
 ###################################################################
-#MODEL = DecisionTreeClassifier()
-#MODEL = RandomForestClassifier()
+# MODEL = DecisionTreeClassifier()
+# MODEL = RandomForestClassifier()
 # MODEL = HSTreeClassifier() # Note: Does not work well with Pandas dataframes. Use Numpy arrays
 
 
-ENSEMBLE = RandomForestClassifier()
+ENSEMBLE = DecisionTreeClassifier()
 MODEL = HSTreeClassifier(estimator_=ENSEMBLE)
 
 
-METHOD = 'PCA-HS-RF (CREDIT CARD)'
+METHOD = 'PCA-HS-DT (CREDIT CARD)'
 
 
 ###################################################################
@@ -93,11 +93,12 @@ def split_data(x, y):
 # CIFAR-10
 #
 ###################################################################
-with open('Temp.csv', 'w', newline='') as csvfile:
+with open('Temp.csv', 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow([METHOD])
-    writer.writerow(['Run',  'Accuracy', 'Time (s)'])
-    for run in range(1, 6):
+    writer.writerow(['Average Accuracy', 'Time (min)'])
+    runs = pd.DataFrame(columns=['Accuracy', 'Time (min)'])
+    for run in range(0, 100):
         # Loading dataset
         x_train_cifar, y_train_cifar, x_test_cifar, y_test_cifar = load_data_image(cifar10)
 
@@ -110,10 +111,10 @@ with open('Temp.csv', 'w', newline='') as csvfile:
         x_test_cifar_flat = x_test_cifar_flat / 255.0
 
         # PCA
-        pca = PCA(0.99)
-        pca.fit(x_train_cifar_flat)
-        x_train_cifar_flat = pca.transform(x_train_cifar_flat)
-        x_test_cifar_flat = pca.transform(x_test_cifar_flat)
+        # pca = PCA(0.99)
+        # pca.fit(x_train_cifar_flat)
+        # x_train_cifar_flat = pca.transform(x_train_cifar_flat)
+        # x_test_cifar_flat = pca.transform(x_test_cifar_flat)
 
         # Training model
         start_time = time.time()
@@ -121,8 +122,11 @@ with open('Temp.csv', 'w', newline='') as csvfile:
         end_time = time.time()
 
         predictions = MODEL.predict(x_test_cifar_flat)
-        accuracy = accuracy_score(y_test_cifar, predictions)
-        writer.writerow([run, accuracy, (end_time - start_time)])
+        accuracy = (accuracy_score(y_test_cifar, predictions)) * 100
+        runs.loc[run] = accuracy, ((end_time - start_time) / 60)
+
+    writer.writerow([runs['Accuracy'].mean(), runs['Time (min)'].mean()])
+    writer.writerow([runs['Accuracy'].std(), runs['Time (min)'].std()])
 
 
 
@@ -337,38 +341,38 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 #
 ###################################################################
 # Loading dataset
-# batch_size = 32
-# img_height = 128
-# img_width = 128
-# dataset = image_dataset_from_directory(
-#     OXFORD_DIR,
-#     image_size=(img_height, img_width),
-#     batch_size=batch_size,
-#     label_mode='int'  # Labels are categorical integers (0-36 for the breeds)
-# )
-#
-# # List all image files
-# image_files = [f for f in os.listdir(OXFORD_DIR) if f.endswith(('.jpg', '.jpeg', '.png'))]
-#
-# # Load images
-# images = []
-# for file in image_files:
-#     img_path = os.path.join(OXFORD_DIR, file)
-#     img = load_img(img_path, target_size=(128, 128))  # Resize images to 128x128 pixels
-#     img_array = img_to_array(img) / 255.0  # Normalize pixel values to [0, 1]
-#     images.append(img_array)
-#
-# # Convert to a numpy array
-# images = np.array(images)
+batch_size = 32
+img_height = 128
+img_width = 128
+dataset = image_dataset_from_directory(
+    OXFORD_DIR,
+    image_size=(img_height, img_width),
+    batch_size=batch_size,
+    label_mode='int'  # Labels are categorical integers (0-36 for the breeds)
+)
 
-# print(f"Loaded {len(images)} images.")
-# print(images.shape)
+# List all image files
+image_files = [f for f in os.listdir(OXFORD_DIR) if f.endswith(('.jpg', '.jpeg', '.png'))]
 
-# PCA
-# pca = PCA(0.99)
-# pca.fit(x_train_credit)
-# x_train_credit = pca.transform(x_train_credit)
-# x_test_credit = pca.transform(x_test_credit)
+# Load images
+images = []
+for file in image_files:
+    img_path = os.path.join(OXFORD_DIR, file)
+    img = load_img(img_path, target_size=(128, 128))  # Resize images to 128x128 pixels
+    img_array = img_to_array(img) / 255.0  # Normalize pixel values to [0, 1]
+    images.append(img_array)
+
+# Convert to a numpy array
+images = np.array(images)
+
+print(f"Loaded {len(images)} images.")
+print(images.shape)
+
+PCA
+pca = PCA(0.99)
+pca.fit(x_train_credit)
+x_train_credit = pca.transform(x_train_credit)
+x_test_credit = pca.transform(x_test_credit)
 
 
 ###################################################################

@@ -1,28 +1,35 @@
-HS-RF (ADULT INCOME),
-Average Accuracy,Time (min)
-79.21929388,0.16152839
-0.339087504,0.001660563
-,
-HS-RF (TITANIC),
-Average Accuracy,Time (min)
-77.5698324,0.007904378
-1.233645881,0.000169129
-,
-HS-RF (CREDIT CARD),
-Average Accuracy,Time (min)
-57.9225,0.237536623
-0.627415087,0.006686723
-PCA-HS-RF (ADULT INCOME),
-Average Accuracy,Time (min)
-63.61561412,0.235416606
-0.536255723,0.003962699
-,
-PCA-HS-RF (TITANIC),
-Average Accuracy,Time (min)
-63.24022346,0.008877754
-1.584112079,0.000230654
-,
-PCA-HS-RF (CREDIT CARD),
-Average Accuracy,Time (min)
-52.04133333,0.27320139
-0.684781171,0.010186308
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

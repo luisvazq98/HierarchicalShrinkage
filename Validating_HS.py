@@ -13,9 +13,9 @@ from ucimlrepo import fetch_ucirepo
 from sklearn.model_selection import GridSearchCV
 
 ######################## VARIABLES ########################
-leafs = np.array([2,4,8,12,15,20,24,28,30,32])
-metric_auc = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
-metric_acc = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
+LEAVES = np.array([2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
+METRIC_AUC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
+METRIC_ACC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 
 ################################################
 #
@@ -105,7 +105,7 @@ for i in range(0, 10):
     acc_scores_dt = []
     train_x, test_x, train_y, test_y = train_test_split(X, Y, test_size=1 / 3, random_state=i)
 
-    for num_leaves in leafs:
+    for num_leaves in LEAVES:
         DT = DecisionTreeClassifier(max_leaf_nodes=num_leaves)
         DT.fit(train_x, train_y)
         predictions = DT.predict(test_x)
@@ -116,8 +116,8 @@ for i in range(0, 10):
         auc_scores_dt.append(auc_dt)
         acc_scores_dt.append(acc_dt)
 
-    metric_auc.loc[i] = auc_scores_dt
-    metric_acc.loc[i] = acc_scores_dt
+    METRIC_AUC.loc[i] = auc_scores_dt
+    METRIC_ACC.loc[i] = acc_scores_dt
 
 
 ######################## HS ########################
@@ -133,7 +133,7 @@ for i in range(0, 10):
     gs_dt.fit(train_x, train_y)
     best_lambda = gs_dt.best_params_['reg_param']
 
-    for num_leaves in leafs:
+    for num_leaves in LEAVES:
         HS = HSTreeClassifier(reg_param=best_lambda, max_leaf_nodes=num_leaves)
         HS.fit(train_x, train_y)
         predictions = HS.predict(test_x)
@@ -145,8 +145,8 @@ for i in range(0, 10):
         acc_scores_hs.append(acc_hs)
 
 
-    metric_auc.loc[i] = auc_scores_hs
-    metric_acc.loc[i] = acc_scores_hs
+    METRIC_AUC.loc[i] = auc_scores_hs
+    METRIC_ACC.loc[i] = acc_scores_hs
 
 
 
@@ -159,16 +159,16 @@ for i in range(0, 10):
 ######################## DT AVERAGE METRICS  ########################
 data_auc_dt = []
 data_acc_dt = []
-for cols in metric_auc.columns:
-    data_auc_dt.append(metric_auc[cols].mean())
-    data_acc_dt.append(metric_acc[cols].mean())
+for cols in METRIC_AUC.columns:
+    data_auc_dt.append(METRIC_AUC[cols].mean())
+    data_acc_dt.append(METRIC_ACC[cols].mean())
 
 ######################## HS AVERAGE METRICS  ########################
 data_auc_hs = []
 data_acc_hs = []
-for cols in metric_auc.columns:
-    data_auc_hs.append(metric_auc[cols].mean())
-    data_acc_hs.append(metric_acc[cols].mean())
+for cols in METRIC_AUC.columns:
+    data_auc_hs.append(METRIC_AUC[cols].mean())
+    data_acc_hs.append(METRIC_ACC[cols].mean())
 
 
 
@@ -180,8 +180,8 @@ for cols in metric_auc.columns:
 
 ######################## AUC SCORE ########################
 plt.figure(figsize=(10,6))
-plt.plot(leafs, data_auc_hs, marker='o', linestyle='-', color='red', label='HS AUC')
-plt.plot(leafs, data_auc_dt, marker='o', linestyle='-', color='b', label="DT AUC")
+plt.plot(LEAVES, data_auc_hs, marker='o', linestyle='-', color='red', label='HS AUC')
+plt.plot(LEAVES, data_auc_dt, marker='o', linestyle='-', color='b', label="DT AUC")
 plt.xlabel("Number of Leaves")
 plt.ylabel("AUC")
 plt.grid(True)
@@ -192,8 +192,8 @@ plt.show()
 
 ######################## ACCURACY ########################
 plt.figure(figsize=(10, 6))
-plt.plot(leafs, data_acc_hs, marker='o', linestyle='-', color='red', label='HS ACCURACY')
-plt.plot(leafs, data_acc_dt, marker='o', linestyle='-', color='b', label='DT ACCURACY')
+plt.plot(LEAVES, data_acc_hs, marker='o', linestyle='-', color='red', label='HS ACCURACY')
+plt.plot(LEAVES, data_acc_dt, marker='o', linestyle='-', color='b', label='DT ACCURACY')
 plt.xlabel('Number of Leaves')
 plt.ylabel('Accuracy')
 plt.grid(True)

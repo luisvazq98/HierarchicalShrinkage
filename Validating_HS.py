@@ -17,6 +17,9 @@ LEAVES = np.array([2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 METRIC_AUC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 METRIC_ACC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 
+HS = HSTreeClassifier()
+DT = DecisionTreeClassifier()
+
 ################################################
 #
 # REGRESSION DATASETS

@@ -3,25 +3,19 @@ import numpy as np
 import os
 import kagglehub
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn import datasets
 from sklearn.model_selection import train_test_split, KFold
 from imodels import HSTreeRegressorCV, HSTreeRegressor, HSTreeClassifier
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from sklearn.metrics import r2_score, mean_squared_error, roc_auc_score, accuracy_score
 from ucimlrepo import fetch_ucirepo
-from sklearn.model_selection import GridSearchCV, cross_val_score
+from sklearn.model_selection import GridSearchCV
 
 ######################## VARIABLES ########################
 leafs = np.array([2,4,8,12,15,20,24,28,30,32])
 metric_auc = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 metric_acc = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
-
-######################## MODELS ########################
-HS = HSTreeRegressor()
-DT = DecisionTreeRegressor()
-
-
 
 ################################################
 #
@@ -29,23 +23,23 @@ DT = DecisionTreeRegressor()
 #
 ################################################
 
-# ######################## DATASET (DIABETES (REGRESSION) ) ########################
-# diabetes = datasets.load_diabetes()
-# X = diabetes.data
-# Y = diabetes.target
-#
-#
-# ######################## DATASET ( RED WINE ) ########################
-# # Download the dataset
-# path = kagglehub.dataset_download("uciml/red-wine-quality-cortez-et-al-2009")
-# # Check the files in the directory
-# files = os.listdir(path)
-# file_path = os.path.join(path, "winequality-red.csv")
-#
-# # Load the dataset into a DataFrame
-# df = pd.read_csv(file_path)
-# X = df.drop(columns=['quality'])
-# Y = df['quality']
+######################## DIABETES (REGRESSION) ########################
+diabetes = datasets.load_diabetes()
+X = diabetes.data
+Y = diabetes.target
+
+
+######################## RED WINE ########################
+# Download the dataset
+path = kagglehub.dataset_download("uciml/red-wine-quality-cortez-et-al-2009")
+# Check the files in the directory
+files = os.listdir(path)
+file_path = os.path.join(path, "winequality-red.csv")
+
+# Load the dataset into a DataFrame
+df = pd.read_csv(file_path)
+X = df.drop(columns=['quality'])
+Y = df['quality']
 
 
 
@@ -55,41 +49,41 @@ DT = DecisionTreeRegressor()
 #
 ################################################
 
-######################## DATASET ( DIABETES (CLASSIFICATION) ) ########################
-# # Download latest version
-# path = kagglehub.dataset_download("mathchi/diabetes-data-set")
-# files = os.listdir(path)
-# file_path = os.path.join(path, "diabetes.csv")
-#
-# df = pd.read_csv(file_path)
-# X = df.drop(columns=['Outcome'])
-# Y = df['Outcome']
+######################## DIABETES (CLASSIFICATION) ########################
+# Download latest version
+path = kagglehub.dataset_download("mathchi/diabetes-data-set")
+files = os.listdir(path)
+file_path = os.path.join(path, "diabetes.csv")
+
+df = pd.read_csv(file_path)
+X = df.drop(columns=['Outcome'])
+Y = df['Outcome']
 
 
-# ######################## DATASET ( BREAST CANCER ) ########################
-# # fetch dataset
-# breast_cancer = fetch_ucirepo(id=14)
-#
-# df = breast_cancer.data
-#
-# # data (as pandas dataframes)
-# X = breast_cancer.data.features
-# Y = breast_cancer.data.targets
-#
-# # Identify and encode categorical columns
-# categorical_columns = X.select_dtypes(include=["object"]).columns
-# label_encoders = {}
-#
-# for col in categorical_columns:
-#     le = LabelEncoder()
-#     X.loc[:, col] = le.fit_transform(X[col])  # Use .loc for assignment
-#     label_encoders[col] = le
-#
-# # Encode the target variable Y
-# y_label_encoder = LabelEncoder()
-# Y = y_label_encoder.fit_transform(Y)
+######################## BREAST CANCER ########################
+# Fetch dataset
+breast_cancer = fetch_ucirepo(id=14)
+df = breast_cancer.data
 
-######################## DATASET ( HABERMAN ) ########################
+# Data (as pandas dataframes)
+X = breast_cancer.data.features
+Y = breast_cancer.data.targets
+
+# Identify and encode categorical columns
+categorical_columns = X.select_dtypes(include=["object"]).columns
+label_encoders = {}
+
+for col in categorical_columns:
+    le = LabelEncoder()
+    X.loc[:, col] = le.fit_transform(X[col])  # Use .loc for assignment
+    label_encoders[col] = le
+
+# Encode the target variable Y
+y_label_encoder = LabelEncoder()
+Y = y_label_encoder.fit_transform(Y)
+
+
+######################## HABERMAN ########################
 # fetch dataset
 haberman_s_survival = fetch_ucirepo(id=43)
 
@@ -155,6 +149,13 @@ for i in range(0, 10):
     metric_acc.loc[i] = acc_scores_hs
 
 
+
+################################################
+#
+# METRICS
+#
+################################################
+
 ######################## DT AVERAGE METRICS  ########################
 data_auc_dt = []
 data_acc_dt = []
@@ -186,7 +187,7 @@ plt.ylabel("AUC")
 plt.grid(True)
 #plt.title("R2 Score", fontsize=20)
 plt.legend()
-plt.savefig("haberman_class_auc")
+#plt.savefig("haberman_class_auc")
 plt.show()
 
 ######################## ACCURACY ########################
@@ -196,14 +197,7 @@ plt.plot(leafs, data_acc_dt, marker='o', linestyle='-', color='b', label='DT ACC
 plt.xlabel('Number of Leaves')
 plt.ylabel('Accuracy')
 plt.grid(True)
-# plt.title("Mean Squared Error", fontsize=20)
+#plt.title("Mean Squared Error", fontsize=20)
 plt.legend()
-plt.savefig("haberman_class_acc")
+#plt.savefig("haberman_class_acc")
 plt.show()
-
-
-
-
-
-
-

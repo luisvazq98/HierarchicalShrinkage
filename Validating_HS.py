@@ -16,6 +16,8 @@ from sklearn.metrics import r2_score, mean_squared_error, roc_auc_score, accurac
 from ucimlrepo import fetch_ucirepo
 from sklearn.model_selection import GridSearchCV
 
+#import imodels as im
+
 ######################## VARIABLES ########################
 LEAVES = np.array([2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 METRIC_AUC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])

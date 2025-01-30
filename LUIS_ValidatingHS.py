@@ -1,8 +1,5 @@
 import pandas as pd
 import numpy as np
-import sys
-sys.path.insert(0, "/Users/luisvazquez/Master's Thesis/imodels-copy")
-import imodels as im
 import subprocess
 import os
 import json
@@ -11,24 +8,31 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn import datasets
 from sklearn.model_selection import train_test_split, KFold
-from imodels import HSTreeRegressorCV, HSTreeRegressor, HSTreeClassifier, HSTreeClassifierCV
-from imodels import get_clean_dataset
+from imodels import get_clean_dataset, HSTreeClassifierCV
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from sklearn.metrics import r2_score, mean_squared_error, roc_auc_score, accuracy_score
 #from ucimlrepo import fetch_ucirepo
+#from hierarchical_shrinkage import HSTreeClassifierCV
+from config.shrinkage.models import ESTIMATORS_CLASSIFICATION
 from sklearn.model_selection import GridSearchCV
 
 ######################## VARIABLES ########################
 LEAVES = np.array([2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 METRIC_AUC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 METRIC_ACC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
-DATASET = "heart"
+DATASET = "haberman"
 SOURCE = "imodels"
 
 # MODELS
-HS = im.HSTreeClassifier()
-#HS = HSTreeClassifierCV()
-DT = DecisionTreeClassifier()
+# HS_model = HSTreeClassifierCV()
+# DT = DecisionTreeClassifier()
+
+cart_hscart_estimators = [
+    model for model_group in ESTIMATORS_CLASSIFICATION
+    for model in model_group
+    if model.name in ['CART', 'HSCART']
+]
+
 
 # Getting clean dataset from iModels
 X, Y, features = get_clean_dataset(DATASET, SOURCE, return_target_col_names=True)
@@ -128,25 +132,82 @@ X, Y, features = get_clean_dataset(DATASET, SOURCE, return_target_col_names=True
 #
 ################################################
 
-######################## DT ########################
+results = []
+################################################
+#
+# NEW WAY
+#
+################################################
 for i in range(0, 10):
     auc_scores_dt = []
     acc_scores_dt = []
     train_x, test_x, train_y, test_y = train_test_split(X, Y, test_size=1 / 3, random_state=i)
 
-    for num_leaves in LEAVES:
-        DT = DecisionTreeClassifier(max_leaf_nodes=num_leaves)
-        DT.fit(train_x, train_y)
-        predictions = DT.predict(test_x)
+    for model_config in cart_hscart_estimators:
+        model_name = model_config.name
+        model_class = model_config.cls
+        model_kwargs = model_config.kwargs.copy()
 
-        auc_dt = roc_auc_score(test_y, predictions)
-        acc_dt = accuracy_score(test_y, predictions)
+        if model_name == "CART":
+            cart_model = model_class(**model_kwargs)
+            cart_model.fit(train_x, train_y)
+            y_pred_proba = cart_model.predict_proba(test_x)[:,1]
+            auc_cart = roc_auc_score(test_y, y_pred_proba)
 
-        auc_scores_dt.append(auc_dt)
-        acc_scores_dt.append(acc_dt)
+            # Append CART results
+            results.append({
+                'Model': 'CART',
+                'Max Leaves': model_kwargs['max_leaf_nodes'],  # Directly taken from ModelConfig
+                'Lambda': None,  # CART does not use lambda
+                'AUC': auc_cart,
+                'Split Seed': i
+            })
+        elif model_name == "HSCART":
+            model = model_class(**model_kwargs)
+            model.fit(train_x, train_y)
+            y_pred_proba = model.predict_proba(test_x)[:, 1]
+            auc_hscart = roc_auc_score(test_y, y_pred_proba)
+            results.append({
+                'Model': 'HSCART',
+                'Max Leaves': model_kwargs['max_leaf_nodes'],  # Directly taken from ModelConfig
+                'Lambda': model.reg_param,  # Save the selected lambda
+                'AUC': auc_hscart,
+                'Split Seed': i
+            })
 
-    METRIC_AUC.loc[i] = auc_scores_dt
-    METRIC_ACC.loc[i] = acc_scores_dt
+
+results_df = pd.DataFrame(results)
+#results_df.to_csv(f"{specific_dataset_name}_cart_hscart_results_combined_GTC.csv", index=False)
+
+
+cart = results_df[results_df['Model']=="CART"]
+hscart = results_df[results_df['Model']=='HSCART']
+# Group by 'Max Leaves' and calculate the average AUC
+average_auc = cart.groupby('Max Leaves')['AUC'].mean().reset_index()
+avg_auc_hs  = hscart.groupby('Max Leaves')['AUC'].mean().reset_index()
+
+
+
+######################## DT ########################
+# for i in range(0, 10):
+#     auc_scores_dt = []
+#     acc_scores_dt = []
+#     train_x, test_x, train_y, test_y = train_test_split(X, Y, test_size=1 / 3, random_state=i)
+#
+#     for num_leaves in LEAVES:
+#         DT = DecisionTreeClassifier(max_leaf_nodes=num_leaves)
+#         DT.fit(train_x, train_y)
+#         #predictions = DT.predict(test_x)
+#         y_pred_proba = DT.predict_proba(test_x)[:, 1]
+#
+#         auc_dt = roc_auc_score(test_y, y_pred_proba)
+#         #acc_dt = accuracy_score(test_y, predictions)
+#
+#         auc_scores_dt.append(auc_dt)
+#         #acc_scores_dt.append(acc_dt)
+#
+#     METRIC_AUC.loc[i] = auc_scores_dt
+#     #METRIC_ACC.loc[i] = acc_scores_dt
 
 
 ######################## HS ########################
@@ -155,28 +216,28 @@ for i in range(0, 10):
     acc_scores_hs = []
     train_x, test_x, train_y, test_y = train_test_split(X, Y, test_size=1 / 3, random_state=i)
 
-    k_fold = KFold(n_splits=3, shuffle=True, random_state=i)
-    parameters = [{'reg_param': [0.1, 1.0, 10.0, 25.0, 50.0, 100.0]}]
-
-    # gs_dt = GridSearchCV(HS, param_grid=parameters, scoring='roc_auc', cv=k_fold)
+    # k_fold = KFold(n_splits=3, shuffle=True, random_state=i)
+    # parameters = [{'reg_param': [0.1, 1.0, 10.0, 25.0, 50.0, 100.0]}]
+    #
+    # gs_dt = GridSearchCV(HS_model, param_grid=parameters, scoring='roc_auc', cv=k_fold)
     # gs_dt.fit(train_x, train_y)
     # best_lambda = gs_dt.best_params_['reg_param']
 
     for num_leaves in LEAVES:
-        #HS = im.HSTreeClassifierCV(reg_param=best_lambda, max_leaf_nodes=num_leaves)
-        HS = im.HSTreeClassifierCV(max_leaf_nodes=num_leaves)
+        HS = HSTreeClassifierCV(reg_param=best_lambda, max_leaf_nodes=num_leaves)
         HS.fit(train_x, train_y)
         predictions = HS.predict(test_x)
+        #y_pred_proba = HS.predict_proba(test_x)[:, 1]
 
         auc_hs = roc_auc_score(test_y, predictions)
-        acc_hs = accuracy_score(test_y, predictions)
+        #acc_hs = accuracy_score(test_y, predictions)
 
         auc_scores_hs.append(auc_hs)
-        acc_scores_hs.append(acc_hs)
+        #acc_scores_hs.append(acc_hs)
 
 
     METRIC_AUC.loc[i] = auc_scores_hs
-    METRIC_ACC.loc[i] = acc_scores_hs
+    #METRIC_ACC.loc[i] = acc_scores_hs
 
 
 
@@ -202,6 +263,11 @@ for cols in METRIC_AUC.columns:
 
 
 
+
+
+
+
+
 ################################################
 #
 # PLOTS
@@ -210,8 +276,8 @@ for cols in METRIC_AUC.columns:
 
 ######################## AUC SCORE ########################
 plt.figure(figsize=(10,6))
-plt.plot(LEAVES, data_auc_hs, marker='o', linestyle='-', color='red', label='HS AUC')
-plt.plot(LEAVES, data_auc_dt, marker='o', linestyle='-', color='b', label="DT AUC")
+plt.plot(average_auc['Max Leaves'], average_auc['AUC'], marker='o', linestyle='-', color='red', label='CART')
+plt.plot(avg_auc_hs['Max Leaves'], avg_auc_hs['AUC'], marker='o', linestyle='-', color='b', label="HSCART")
 plt.xlabel("Number of Leaves")
 plt.ylabel("AUC")
 plt.grid(True)

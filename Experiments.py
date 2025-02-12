@@ -25,7 +25,7 @@ from tensorflow.keras.preprocessing import image_dataset_from_directory
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import time
 import numpy as np
-
+from ucimlrepo import fetch_ucirepo
 
 ###################################################################
 #
@@ -86,7 +86,6 @@ def split_data(x, y):
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
     return x_train, x_test, y_train, y_test
-
 
 ###################################################################
 #

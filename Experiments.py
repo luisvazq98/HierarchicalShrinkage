@@ -410,8 +410,6 @@ x_train_gait, x_test_gait, y_train_gait, y_test_gait = split_data(x, y)
 # # Download dataset
 dataset_path = kagglehub.dataset_download("rabieelkharoua/students-performance-dataset")
 
-print("Path to dataset files:", dataset_path)
-
 # List all files in the dataset directory
 dataset_files = os.listdir(dataset_path)
 
@@ -453,10 +451,6 @@ predict_students_dropout_and_academic_success = fetch_ucirepo(id=697)
 X = predict_students_dropout_and_academic_success.data.features
 y = predict_students_dropout_and_academic_success.data.targets
 
-pca = PCA(0.99)
-pca.fit(X)
-X = pca.transform(X)
-
 # Convert categorical variables to numerical using Label Encoding
 categorical_columns = y.select_dtypes(include=['object']).columns
 for col in categorical_columns:
@@ -475,6 +469,24 @@ y = y.to_numpy()
 
 # # Split data
 x_train_student, x_test_student, y_train_student, y_test_student = split_data(X, y)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -502,7 +514,7 @@ for model_config in cart_hscart_estimators:  # Loop through CART and HSCART mode
         # Train CART
         cart_model = model_class(**model_kwargs)
         cart_model.fit(x_train_gait, y_train_gait)
-        y_pred_proba = cart_model.predict_proba(x_test_gait)
+        y_pred_proba = cart_model.predict_proba(x_test_gait)[:, 1]
         predictions = cart_model.predict(x_test_gait)
         accuracy = accuracy_score(y_test_gait, predictions)
         #print(f"Shape of y_pred_proba: {y_pred_proba.shape}")

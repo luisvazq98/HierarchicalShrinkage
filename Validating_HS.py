@@ -20,15 +20,15 @@ from imodels import get_clean_dataset
 sys.path.insert(0, "/Users/luisvazquez")
 sys.path.insert(0, "/Users/luisvazquez/imodelsExperiments")
 from imodelsExperiments.config.shrinkage.models import ESTIMATORS_CLASSIFICATION
-from sklearn.model_selection import GridSearchCV
 
 ######################## VARIABLES ########################
 # METRIC_AUC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 # METRIC_ACC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 dataset_list = ['credit_card_clean', 'diabetes', 'breast_cancer', 'haberman', 'gait', 'student performance'
                 'student dropout', 'titanic']
-DATASET = "diabetes"
+DATASET = "heart"
 SOURCE = "imodels"
+PCA_VALUE = "no"
 
 ######################## MODELS ########################
 def get_models():
@@ -66,7 +66,6 @@ def get_regression_dataset(dataset):
         print("Error. Please enter a valid dataset")
 
 
-
 ######################## CLASSIFICATION DATASETS ########################
 def get_classification_dataset(dataset, source):
     if SOURCE == 'imodels':
@@ -85,37 +84,15 @@ def get_classification_dataset(dataset, source):
         x = data.data.features
         y = data.data.targets
 
+        # Dropping rows with NaN values
+        y = y.drop(index=x[x.isna().any(axis=1)].index)
+        x = x.dropna(axis=0)
 
+        # Reset the indices of X and Y
+        x.reset_index(drop=True, inplace=True)
+        y.reset_index(drop=True, inplace=True)
 
-    else:
-        if dataset == "diabetes":
-            # Download latest version
-            path = kagglehub.dataset_download("mathchi/diabetes-data-set")
-            files = os.listdir(path)
-            file_path = os.path.join(path, "diabetes.csv")
-
-            df = pd.read_csv(file_path)
-            x = df.drop(columns=['Outcome'])
-            y = df['Outcome']
-            return x, y
-
-        elif dataset == "breast cancer":
-            # Fetch dataset
-            breast_cancer = fetch_ucirepo(id=14)
-
-            # Data (as pandas dataframes)
-            x = breast_cancer.data.features
-            y = breast_cancer.data.targets
-
-            # Dropping rows with NaN values
-            y = y.drop(index=x[x.isna().any(axis=1)].index)
-            x = x.dropna(axis=0)
-
-            # Reset the indices of X and Y
-            x.reset_index(drop=True, inplace=True)
-            y.reset_index(drop=True, inplace=True)
-
-            # Identify and encode categorical columns
+        if DATASET == "breast cancer":
             categorical_columns = x.select_dtypes(include=["object"]).columns
             label_encoders = {}
 
@@ -132,16 +109,51 @@ def get_classification_dataset(dataset, source):
             y_label_encoder = LabelEncoder()
             y = y_label_encoder.fit_transform(y)
             return x, y
+        elif DATASET == "gait":
+            x.dropna(columns=['condition'], inplace=True)
+            y = x['condition']
+            x = x.to_numpy()
+            y = y.to_numpy()
 
-        elif dataset == "haberman":
-            # fetch dataset
-            haberman_s_survival = fetch_ucirepo(id=43)
+            return x, y
+        elif DATASET == "student dropout":
+            # Convert categorical variables to numerical using Label Encoding
+            categorical_columns = y.select_dtypes(include=['object']).columns
+            for col in categorical_columns:
+                le = LabelEncoder()
+                y.loc[:, col] = le.fit_transform(y[col])
 
-            # data (as pandas dataframes)
-            x = haberman_s_survival.data.features
-            y = haberman_s_survival.data.targets
+            y = y.squeeze()
+            y = y.astype(int)
+            y = y.dropna()
 
-        elif dataset == 'adult income':
+            x = x.to_numpy()
+            y = y.to_numpy()
+
+            return x, y
+        else:
+            return x, y
+
+    elif SOURCE == 'kaggle':
+        dataset_paths = {
+            "diabetes": {"filename": 'diabetes.csv', "path": "mathchi/diabetes-data-set"},
+            "student performance": {"filename": 'Student_performance_data.csv', "path": "rabieelkharoua/students-performance-dataset"},
+        }
+
+        path = kagglehub.dataset_download(dataset_paths[DATASET]['path'])
+        file_path = os.path.join(path, dataset_paths[DATASET]['filename'])
+        df = pd.read_csv(file_path)
+        if DATASET == "diabetes":
+            x = df.drop(columns=['Outcome'])
+            y = df['Outcome']
+            return x, y
+        elif DATASET == "student performance":
+            x = df.drop(columns=['GradeClass'])
+            y = df['GradeClass']
+            return x, y
+
+    else:
+        if dataset == 'adult income':
             ADULT_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
             ADULT_COLS = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status',
                           'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss',
@@ -180,59 +192,6 @@ def get_classification_dataset(dataset, source):
 
             return x, y
 
-        # Multivariate Datasets
-        elif dataset == 'gait':
-            gait = fetch_ucirepo(id=760)
-            x_gait = gait.data.features
-            y_gait = gait.data.targets
-
-            x = x_gait.drop(columns=['condition'])
-            y = y_gait['condition']
-            x = x.to_numpy()
-            y = y.to_numpy()
-
-            return x, y
-
-        elif dataset == 'student performance':
-            dataset_path = kagglehub.dataset_download("rabieelkharoua/students-performance-dataset")
-
-            dataset_files = os.listdir(dataset_path)
-            csv_files = [f for f in dataset_files if f.endswith('.csv')]
-            if not csv_files:
-                raise FileNotFoundError("No CSV file found in dataset folder.")
-
-            csv_path = os.path.join(dataset_path, csv_files[0])
-
-            df = pd.read_csv(csv_path)
-
-            x = df.drop(columns=['GradeClass'])
-            y = df['GradeClass']
-
-            return x, y
-
-        elif dataset == 'student dropout':
-            # # Fetch dataset
-            predict_students_dropout_and_academic_success = fetch_ucirepo(id=697)
-
-            # Data (as pandas dataframes)
-            x = predict_students_dropout_and_academic_success.data.features
-            y = predict_students_dropout_and_academic_success.data.targets
-
-            # Convert categorical variables to numerical using Label Encoding
-            categorical_columns = y.select_dtypes(include=['object']).columns
-            for col in categorical_columns:
-                le = LabelEncoder()
-                y.loc[:, col] = le.fit_transform(y[col])
-
-            y = y.squeeze()
-            y = y.astype(int)
-            y = y.dropna()
-
-            x = x.to_numpy()
-            y = y.to_numpy()
-
-            return x, y
-
 
 ######################## TRAINING MODELS ########################
 def training_models(x, y, models):
@@ -255,9 +214,10 @@ def training_models(x, y, models):
             # test_x = scaler.transform(test_x)
 
             # PCA
-            pca = PCA(0.99)
-            train_x = pca.fit_transform(train_x)
-            test_x = pca.transform(test_x)
+            if PCA_VALUE == 'yes':
+                pca = PCA(0.99)
+                train_x = pca.fit_transform(train_x)
+                test_x = pca.transform(test_x)
 
 
         for model_config in models:
@@ -284,7 +244,7 @@ def training_models(x, y, models):
                     'Max Leaves': model_kwargs['max_leaf_nodes'],
                     'Max Depth': cart_model.tree_.max_depth,
                     'Node Count': cart_model.tree_.node_count,
-                    'Lambda': None,  # CART does not use lambda
+                    'Lambda': None,
                     'AUC': auc_cart,
                     'Accuracy': accuracy,
                     'Time (min)': (end_time - start_time) / 60,
@@ -347,25 +307,33 @@ if __name__ == "__main__":
     ######################## GETTING METRICS ########################
     cart = results_df[results_df['Model']=="CART"]
     hscart = results_df[results_df['Model']=='HSCART']
+
     # Group by 'Max Leaves' and calculate the average AUC
-    average_auc = cart.groupby('Max Leaves')['AUC'].mean().reset_index()
-    avg_auc_hs = hscart.groupby('Max Leaves')['AUC'].mean().reset_index()
+    cart_avg_auc = cart.groupby('Max Leaves')['AUC'].mean().reset_index()
+    hs_avg_auc = hscart.groupby('Max Leaves')['AUC'].mean().reset_index()
+
+    # Group by 'Max Leaves' and calculate the highest accuracy
+    cart_max_acc = cart.groupby('Max Leaves')['Accuracy'].mean().max()
+    hs_max_acc = hscart.groupby('Max Leaves')['Accuracy'].mean().max()
+    print("CART Accuracy:", (cart_max_acc*100))
+    print("HSCART Accuracy:", (hs_max_acc*100))
+
 
     ######################## PLOTS ########################
 
-    # # AUC Score
-    # plt.figure(figsize=(10,6))
-    # plt.plot(LEAVES, data_auc_hs, marker='o', linestyle='-', color='red', label='HS AUC')
-    # plt.plot(LEAVES, data_auc_dt, marker='o', linestyle='-', color='b', label="DT AUC")
-    # plt.xlabel("Number of Leaves")
-    # plt.ylabel("AUC")
-    # plt.grid(True)
-    # plt.title(DATASET, fontsize=20)
-    # plt.legend()
-    # # plt.savefig("juvenile_class_au")
-    # plt.show()
-    #
-    # # Accuracy
+    # AUC Score
+    plt.figure(figsize=(10,6))
+    plt.plot(cart_avg_auc['Max Leaves'], cart_avg_auc['AUC'], marker='o', linestyle='-', color='blue', label='CART AUC')
+    plt.plot(hs_avg_auc['Max Leaves'], hs_avg_auc['AUC'], marker='o', linestyle='-', color='red', label="HSCART AUC")
+    plt.xlabel("Number of Leaves")
+    plt.ylabel("AUC")
+    plt.grid(True)
+    plt.title(DATASET, fontsize=20)
+    plt.legend()
+    # plt.savefig("juvenile_class_au")
+    plt.show()
+
+    # Accuracy
     # plt.figure(figsize=(10, 6))
     # plt.plot(LEAVES, data_acc_hs, marker='o', linestyle='-', color='red', label='HS ACCURACY')
     # plt.plot(LEAVES, data_acc_dt, marker='o', linestyle='-', color='b', label='DT ACCURACY')

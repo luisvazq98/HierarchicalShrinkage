@@ -6,6 +6,7 @@ import time
 import os
 import json
 import kagglehub
+import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn import datasets
@@ -26,8 +27,8 @@ from imodelsExperiments.config.shrinkage.models import ESTIMATORS_CLASSIFICATION
 # METRIC_ACC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
 dataset_list = ['credit_card_clean', 'diabetes', 'breast_cancer', 'haberman', 'gait', 'student performance'
                 'student dropout', 'titanic']
-DATASET = "heart"
-SOURCE = "imodels"
+DATASET = "student performance"
+SOURCE = "kaggle"
 PCA_VALUE = "no"
 
 ######################## MODELS ########################
@@ -137,7 +138,7 @@ def get_classification_dataset(dataset, source):
     elif SOURCE == 'kaggle':
         dataset_paths = {
             "diabetes": {"filename": 'diabetes.csv', "path": "mathchi/diabetes-data-set"},
-            "student performance": {"filename": 'Student_performance_data.csv', "path": "rabieelkharoua/students-performance-dataset"},
+            "student performance": {"filename": 'Student_performance_data _.csv', "path": "rabieelkharoua/students-performance-dataset"},
         }
 
         path = kagglehub.dataset_download(dataset_paths[DATASET]['path'])
@@ -298,7 +299,7 @@ if __name__ == "__main__":
 
     ######################## DATASET ########################
     # x, y = get_regression_dataset(DATASET)
-    X, Y, features = get_classification_dataset(DATASET, SOURCE)
+    X, Y = get_classification_dataset(DATASET, SOURCE)
 
 
     ######################## TRAINING MODELS ########################

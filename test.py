@@ -378,3 +378,57 @@ if __name__ == "__main__":
     # # plt.savefig("juvenile_class_acc")
     # plt.show()
 
+
+
+
+
+
+
+######################## EXCEL ########################
+import pandas as pd
+
+# Calculate your values
+cart_max_acc = 91.34
+hs_max_acc = 87.98
+
+# Create a DataFrame with the results
+df = pd.DataFrame({
+    'DATASET': ['MyDataset'],  # Replace with your actual dataset name
+    'DT': [cart_max_acc],
+    'HS-DT': [hs_max_acc],
+    'PCA-DT': [None],          # Fill in if applicable
+    'PCA-HS-DT': [None]        # Fill in if applicable
+})
+
+# Write the DataFrame to an Excel file
+df.to_excel('results.xlsx', index=False)
+
+
+# Read existing data
+try:
+    existing_df = pd.read_excel('results.xlsx')
+except FileNotFoundError:
+    existing_df = pd.DataFrame(columns=['DATASET', 'DT', 'HS-DT', 'PCA-DT', 'PCA-HS-DT'])
+
+# Specify your dataset name and new values.
+dataset_name = 'MyDataset'
+pca_dt_value = 0.9
+pca_hs_dt_value = 0.92
+
+# Check if the row for this dataset already exists.
+if dataset_name in df['DATASET'].values:
+    # Update the existing row with new PCA values.
+    df.loc[df['DATASET'] == dataset_name, ['PCA-DT', 'PCA-HS-DT']] = [pca_dt_value, pca_hs_dt_value]
+else:
+    # If the row doesn't exist, create it. You can also include other values as needed.
+    new_row = {
+        'DATASET': dataset_name,
+        'DT': None,  # or provide a value if available
+        'HS-DT': None,  # or provide a value if available
+        'PCA-DT': pca_dt_value,
+        'PCA-HS-DT': pca_hs_dt_value
+    }
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+# Save the updated DataFrame back to the Excel file.
+df.to_excel('results.xlsx', index=False)

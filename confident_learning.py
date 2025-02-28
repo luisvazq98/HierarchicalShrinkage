@@ -382,3 +382,21 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig("credit card")
     plt.show()
+
+
+
+
+
+
+
+data = fetch_ucirepo(id=760)
+x = data.data.features
+y = data.data.targets
+
+# Dropping rows with NaN values
+y = y.drop(index=x[x.isna().any(axis=1)].index)
+x = x.dropna(axis=0)
+
+# Reset the indices of X and Y
+x.reset_index(drop=True, inplace=True)
+y.reset_index(drop=True, inplace=True)

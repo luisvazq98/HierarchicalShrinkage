@@ -1,3 +1,4 @@
+# region Libraries
 import pandas as pd
 import numpy as np
 import sys
@@ -6,7 +7,10 @@ import time
 import os
 import json
 import kagglehub
+from scipy import sparse
+from sklearn.decomposition import NMF, TruncatedSVD
 import seaborn as sns
+import networkx as nx
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn import datasets
@@ -21,27 +25,136 @@ from imodels import get_clean_dataset
 sys.path.insert(0, "/Users/luisvazquez")
 sys.path.insert(0, "/Users/luisvazquez/imodelsExperiments")
 from imodelsExperiments.config.shrinkage.models import ESTIMATORS_CLASSIFICATION
+# endregion
 
 ######################## VARIABLES ########################
-# METRIC_AUC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
-# METRIC_ACC = pd.DataFrame(columns=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
-dataset_list = ['credit_card_clean', 'diabetes', 'breast_cancer', 'haberman', 'gait', 'student performance'
-                'student dropout', 'titanic']
-DATASET = "student performance"
-SOURCE = "kaggle"
+# Define the dataset-source mapping
+
+DATASET_DIC = {
+    # These are HS paper datasets
+    "breast cancer": {
+        "source": 'uci',
+        "id": 14
+    },
+
+    "haberman": {
+        "source": 'uci',
+        "id": 43
+    },
+
+    "diabetes": {
+        "filename": 'diabetes.csv',
+        "path": "mathchi/diabetes-data-set",
+        "source": ''
+    },
+
+    # These are selected datasets for experiments
+    "cifar": {
+        "source": ''
+    },
+
+    "fashion minst": {
+        "source": ''
+    },
+
+    "oxford pets": {
+        "source": ''
+    },
+
+    "adult income": {
+        "source": ''
+    },
+
+    "titanic": {
+        "source": ''
+    },
+
+    "credit_card_clean": {
+        "source": 'imodels'
+    },
+
+    "student dropout": {
+        "source": 'uci',
+        "id": 697
+    },
+
+    "student performance": {
+        "filename": 'Student_performance_data _.csv',
+        "path": "rabieelkharoua/students-performance-dataset",
+        "source": 'kaggle'
+    },
+
+    "gait": {
+        "source": 'uci',
+        "id": 760
+    },
+
+    "musae": {
+        "filename": '',
+        "path": 'rozemberczki/musae-github-social-network',
+        "source": 'kaggle'
+    },
+
+    "internet ads": {
+        "filename": 'add.csv',
+        "path": 'uciml/internet-advertisements-data-set',
+        "source": 'kaggle'
+    }
+}
+
+
+# Name of desired dataset
+DATASET = "internet ads"
+
+# Getting dataset source from dataset dictionary
+SOURCE = DATASET_DIC[DATASET]['source']
+
+# Yes or no for PCA
 PCA_VALUE = "no"
 
-######################## MODELS ########################
+print(f"Dataset: {DATASET}\nSource: {SOURCE}\nPCA: {PCA_VALUE}")
+
+
+######################## MISCELLANEOUS FUNCTIONS ########################
+#region MISCELLANEOUS FUNCTIONS
+
+# Another way to load the 20 models (10 CART, 10 HSCART)
 def get_models():
     LEAVES = np.array([2, 4, 8, 12, 15, 20, 24, 28, 30, 32])
     models = []
     for i in LEAVES:
         models.append(HSTreeClassifierCV(estimator_=DecisionTreeClassifier(max_leaf_nodes=i)))
 
-    for i in  LEAVES:
+    for i in LEAVES:
         models.append(DecisionTreeClassifier(max_leaf_nodes=i))
 
     return models
+
+# Both of the following functions are for the GitHub MUSAE datset
+def transform_features_to_sparse(table):
+    table["weight"] = 1
+    table = table.values.tolist()
+    index_1 = [row[0] for row in table]
+    index_2 = [row[1] for row in table]
+    values = [row[2] for row in table]
+    count_1, count_2 = max(index_1)+1, max(index_2)+1
+    sp_m = sparse.csr_matrix(sparse.coo_matrix((values,(index_1,index_2)),shape=(count_1,count_2),dtype=np.float32))
+    return sp_m
+def normalize_adjacency(raw_edges):
+    raw_edges_t = pd.DataFrame()
+    raw_edges_t["id_1"] = raw_edges["id_2"]
+    raw_edges_t["id_2"] = raw_edges["id_1"]
+    raw_edges = pd.concat([raw_edges,raw_edges_t])
+    edges = raw_edges.values.tolist()
+    graph = nx.from_edgelist(edges)
+    ind = range(len(graph.nodes()))
+    degs = [1.0/graph.degree(node) for node in graph.nodes()]
+    A = transform_features_to_sparse(raw_edges)
+    degs = sparse.csr_matrix(sparse.coo_matrix((degs, (ind, ind)), shape=A.shape,dtype=np.float32))
+    A = A.dot(degs)
+    return A
+
+#endregion
 
 
 ######################## REGRESSION DATASETS ########################
@@ -72,18 +185,15 @@ def get_classification_dataset(dataset, source):
     if SOURCE == 'imodels':
         x, y, feature = get_clean_dataset(dataset, source, return_target_col_names=True)
         return x, y, feature
-    elif SOURCE == 'uci':
-        dataset_ids = {
-            "breast cancer": 14,
-            "haberman": 43,
-            "gait": 760,
-            "student dropout": 697
-        }
 
+    elif SOURCE == 'uci':
         # Fetch the dataset using its corresponding ID
-        data = fetch_ucirepo(dataset_ids[DATASET])
+        data = fetch_ucirepo(id=DATASET_DIC[DATASET]['id'])
         x = data.data.features
         y = data.data.targets
+
+        if y is None:
+            y = pd.DataFrame()
 
         # Dropping rows with NaN values
         y = y.drop(index=x[x.isna().any(axis=1)].index)
@@ -109,10 +219,14 @@ def get_classification_dataset(dataset, source):
             # Encode the target variable Y
             y_label_encoder = LabelEncoder()
             y = y_label_encoder.fit_transform(y)
+
+            x = x.to_numpy()
+            y = y.to_numpy()
+
             return x, y
         elif DATASET == "gait":
-            x.dropna(columns=['condition'], inplace=True)
             y = x['condition']
+            x.drop(columns=['condition'], inplace=True)
             x = x.to_numpy()
             y = y.to_numpy()
 
@@ -127,30 +241,92 @@ def get_classification_dataset(dataset, source):
             y = y.squeeze()
             y = y.astype(int)
             y = y.dropna()
+            y.reset_index(inplace=True, drop=True)
 
             x = x.to_numpy()
             y = y.to_numpy()
 
             return x, y
         else:
+            x = x.to_numpy()
+            y = y.to_numpy()
             return x, y
 
     elif SOURCE == 'kaggle':
-        dataset_paths = {
-            "diabetes": {"filename": 'diabetes.csv', "path": "mathchi/diabetes-data-set"},
-            "student performance": {"filename": 'Student_performance_data _.csv', "path": "rabieelkharoua/students-performance-dataset"},
-        }
+        path = kagglehub.dataset_download(DATASET_DIC[DATASET]['path'])
+        file_path = os.path.join(path, DATASET_DIC[DATASET]['filename'])
 
-        path = kagglehub.dataset_download(dataset_paths[DATASET]['path'])
-        file_path = os.path.join(path, dataset_paths[DATASET]['filename'])
-        df = pd.read_csv(file_path)
         if DATASET == "diabetes":
+            df = pd.read_csv(file_path)
             x = df.drop(columns=['Outcome'])
             y = df['Outcome']
+
+            x = x.to_numpy()
+            y = y.to_numpy()
+
             return x, y
         elif DATASET == "student performance":
+            df = pd.read_csv(file_path)
             x = df.drop(columns=['GradeClass'])
             y = df['GradeClass']
+
+            x = x.to_numpy()
+            y = y.to_numpy()
+
+            return x, y
+        elif DATASET == "musae":
+            edges_path = os.path.join(file_path, 'musae_git_edges.csv')
+            features_path = os.path.join(file_path, 'musae_git_features.csv')
+            target_path = os.path.join(file_path, 'musae_git_target.csv')
+
+            # Dataframes
+            edges = pd.read_csv(edges_path)
+            features = pd.read_csv(features_path)
+            target = pd.read_csv(target_path)
+
+            y = np.array(target["ml_target"])
+            A = normalize_adjacency(edges)
+            X_sparse = transform_features_to_sparse(features)
+            # X_tilde = A.dot(X)
+
+            model = TruncatedSVD(n_components=16, random_state=0)
+            W = model.fit_transform(X_sparse)
+            model = TruncatedSVD(n_components=16, random_state=0)
+            W_tilde = model.fit_transform(A)
+
+            concatenated_features = np.concatenate([W, W_tilde], axis=1)
+
+            return concatenated_features, y
+
+        elif DATASET == 'internet ads':
+            # Reading .csv file into dataframe
+            df = pd.read_csv(file_path, low_memory=False)
+            df = df[['0', '1', '2', '3', '1558']]
+
+            # Setting missing values as NaN instead of '?'
+            dfn = df.map(lambda x: np.nan if isinstance(x, str) and '?' in x else x)
+
+            dfn['0'] = dfn['0'].astype(float)
+            dfn['1'] = dfn['1'].astype(float)
+            dfn['2'] = dfn['2'].astype(float)
+
+            dfn.iloc[:, 0:3] = dfn.iloc[:, 0:3].fillna(dfn.iloc[:, 0:3].dropna().mean())
+            dfn.dropna(inplace=True)
+            dfn['3'] = dfn['3'].astype(int)
+            #dfn.drop_duplicates(inplace=True)
+            dfn.reset_index(drop=True, inplace=True)
+
+            categorical_columns = dfn.select_dtypes(include=['object']).columns
+            for col in categorical_columns:
+                le = LabelEncoder()
+                dfn[col] = le.fit_transform(dfn[col])
+
+            x = dfn.drop(columns=['1558'])
+            y = dfn['1558']
+
+            x = x.to_numpy()
+            y = y.to_numpy()
+
             return x, y
 
     else:
@@ -165,6 +341,7 @@ def get_classification_dataset(dataset, source):
             # Remove rows with missing values
             data_adult.replace('?', np.nan, inplace=True)
             data_adult.dropna(inplace=True)
+            data_adult.reset_index(inplace=True, drop=True)
 
             # Separate features and target variable
             x = data_adult.drop('income', axis=1)
@@ -175,6 +352,9 @@ def get_classification_dataset(dataset, source):
             for col in categorical_columns:
                 le = LabelEncoder()
                 x[col] = le.fit_transform(x[col])
+
+            x = x.to_numpy()
+            y = y.to_numpy()
 
             return x, y
 
@@ -191,6 +371,9 @@ def get_classification_dataset(dataset, source):
             x = data_titanic.drop('Survived', axis=1)
             y = data_titanic['Survived']
 
+            x = x.to_numpy()
+            y = y.to_numpy()
+
             return x, y
 
 
@@ -199,15 +382,10 @@ def training_models(x, y, models):
     results = []
     for i in range(0, 10):
         if SOURCE == 'imodels':
-            train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=1 / 3, random_state=i)
+            train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=1/3, random_state=i)
         else:
             # Splitting dataset
-            train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=1 / 3, random_state=i)
-
-            train_x = train_x.reset_index(drop=True).to_numpy()
-            train_y = train_y.reset_index(drop=True).to_numpy()
-            test_x = test_x.reset_index(drop=True).to_numpy()
-            test_y = test_y.reset_index(drop=True).to_numpy()
+            train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=1/3, random_state=i)
 
             # Standard Scaler
             # scaler = StandardScaler()
@@ -233,10 +411,15 @@ def training_models(x, y, models):
                 cart_model.fit(train_x, train_y)
                 end_time = time.time()
 
+                if len(np.unique(test_y)) == 2:
+                    y_pred_proba = cart_model.predict_proba(test_x)[:, 1]
+                    auc_cart = roc_auc_score(test_y, y_pred_proba)
+                else:
+                    y_pred_proba = cart_model.predict_proba(test_x)
+                    auc_cart = roc_auc_score(test_y, y_pred_proba, multi_class='ovr', average='macro')
+
                 # Getting metrics
-                y_pred_proba = cart_model.predict_proba(test_x)[:, 1]
                 predictions = cart_model.predict(test_x)
-                auc_cart = roc_auc_score(test_y, y_pred_proba)
                 accuracy = accuracy_score(test_y, predictions)
 
                 # Append CART results
@@ -258,10 +441,15 @@ def training_models(x, y, models):
                 hs_model.fit(train_x, train_y)
                 end_time = time.time()
 
+                if len(np.unique(test_y)) == 2:
+                    y_pred_proba = hs_model.predict_proba(test_x)[:, 1]
+                    auc_hscart = roc_auc_score(test_y, y_pred_proba)
+                else:
+                    y_pred_proba = hs_model.predict_proba(test_x)
+                    auc_hscart = roc_auc_score(test_y, y_pred_proba, multi_class='ovr', average='macro')
+
                 # Getting metrics
-                y_pred_proba = hs_model.predict_proba(test_x)[:, 1]
                 predictions = hs_model.predict(test_x)
-                auc_hscart = roc_auc_score(test_y, y_pred_proba)
                 accuracy = accuracy_score(test_y, predictions)
 
                 # Append HSCART results
@@ -283,8 +471,6 @@ def training_models(x, y, models):
 
 
 
-
-
 if __name__ == "__main__":
 
     ######################## MODELS ########################
@@ -299,8 +485,8 @@ if __name__ == "__main__":
 
     ######################## DATASET ########################
     # x, y = get_regression_dataset(DATASET)
-    X, Y = get_classification_dataset(DATASET, SOURCE)
-
+    X, Y, *extra = get_classification_dataset(DATASET, SOURCE)
+    features = extra[0] if extra else None
 
     ######################## TRAINING MODELS ########################
     results_df = training_models(X, Y, cart_hscart_estimators)

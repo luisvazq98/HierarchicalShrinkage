@@ -25,17 +25,15 @@ from imodelsExperiments.config.shrinkage.models import ESTIMATORS_CLASSIFICATION
 ######################## VARIABLES ########################
 dataset_list = ['credit_card_clean', 'diabetes', 'breast_cancer', 'haberman', 'gait', 'student performance',
                 'student dropout', 'titanic']
-DATASET = "credit_card_clean"  # Example multi-class dataset
-SOURCE = "imodels"
+DATASET = "student performance"  # Example multi-class dataset
+SOURCE = "kaggle"
 PCA_VALUE = "no"
-NOISE_RATIO = 0.3  # Proportion of labels to corrupt (20%)
+NOISE_RATIO = 0.49
 
 
 ######################## NOISE INJECTION ########################
 def introduce_label_noise(y, noise_ratio=0.2, random_state=42):
     """
-    Introduce noise into labels.
-
     For binary classification:
       Flips labels (0->1 and 1->0).
 
@@ -129,9 +127,9 @@ def get_classification_dataset(dataset, source):
             x = df.drop(columns=['GradeClass'])
             y = df['GradeClass']
             # Encode if necessary:
-            if y.dtype == 'O' or not np.issubdtype(y.dtype, np.number):
-                le = LabelEncoder()
-                y = le.fit_transform(y)
+            # if y.dtype == 'O' or not np.issubdtype(y.dtype, np.number):
+            #     le = LabelEncoder()
+            #     y = le.fit_transform(y)
             return x, y, None
     else:
         # Fallback for other datasets such as 'adult income' or 'titanic'
@@ -380,23 +378,6 @@ if __name__ == "__main__":
         ax.grid(True)
         ax.legend()
     plt.tight_layout()
-    plt.savefig("credit card")
+    plt.title("student performance 49%")
+    plt.savefig("student performance_49")
     plt.show()
-
-
-
-
-
-
-
-data = fetch_ucirepo(id=760)
-x = data.data.features
-y = data.data.targets
-
-# Dropping rows with NaN values
-y = y.drop(index=x[x.isna().any(axis=1)].index)
-x = x.dropna(axis=0)
-
-# Reset the indices of X and Y
-x.reset_index(drop=True, inplace=True)
-y.reset_index(drop=True, inplace=True)

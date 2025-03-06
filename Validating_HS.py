@@ -29,7 +29,6 @@ from imodelsExperiments.config.shrinkage.models import ESTIMATORS_CLASSIFICATION
 
 ######################## VARIABLES ########################
 # Define the dataset-source mapping
-
 DATASET_DIC = {
     # These are HS paper datasets
     "breast cancer": {
@@ -104,13 +103,16 @@ DATASET_DIC = {
 
 
 # Name of desired dataset
-DATASET = "internet ads"
+DATASET = "credit_card_clean"
 
 # Getting dataset source from dataset dictionary
 SOURCE = DATASET_DIC[DATASET]['source']
 
 # Yes or no for PCA
 PCA_VALUE = "no"
+
+# Excel file name to save results
+FILE_NAME = "Results"
 
 print(f"Dataset: {DATASET}\nSource: {SOURCE}\nPCA: {PCA_VALUE}")
 
@@ -159,6 +161,7 @@ def normalize_adjacency(raw_edges):
 
 ######################## REGRESSION DATASETS ########################
 def get_regression_dataset(dataset):
+    print("------- Getting regression dataset -------")
     if dataset == "diabetes":
         diabetes = datasets.load_diabetes()
         x = diabetes.data
@@ -182,6 +185,7 @@ def get_regression_dataset(dataset):
 
 ######################## CLASSIFICATION DATASETS ########################
 def get_classification_dataset(dataset, source):
+    print("------- Getting classification dataset -------")
     if SOURCE == 'imodels':
         x, y, feature = get_clean_dataset(dataset, source, return_target_col_names=True)
         return x, y, feature
@@ -379,6 +383,7 @@ def get_classification_dataset(dataset, source):
 
 ######################## TRAINING MODELS ########################
 def training_models(x, y, models):
+    print("------- Starting to train model -------")
     results = []
     for i in range(0, 10):
         if SOURCE == 'imodels':
@@ -392,11 +397,11 @@ def training_models(x, y, models):
             # train_x = scaler.fit_transform(train_x)
             # test_x = scaler.transform(test_x)
 
-            # PCA
-            if PCA_VALUE == 'yes':
-                pca = PCA(0.99)
-                train_x = pca.fit_transform(train_x)
-                test_x = pca.transform(test_x)
+        # PCA
+        if PCA_VALUE == 'yes':
+            pca = PCA(0.99)
+            train_x = pca.fit_transform(train_x)
+            test_x = pca.transform(test_x)
 
 
         for model_config in models:
@@ -467,12 +472,59 @@ def training_models(x, y, models):
 
 
     model_results = pd.DataFrame(results)
+    print("------- Finished training model -------")
     return model_results
 
 
 
-if __name__ == "__main__":
+######################## SAVING RESULTS TO EXCEL FILE ########################
+def save_to_excel(cart_acc, hs_acc, std_cart, std_hs):
+    if PCA_VALUE == 'no':
+        # Create a DataFrame with the results
+        df = pd.DataFrame({
+            'DATASET': [DATASET],
+            'DT': [f"{cart_acc:.2f} ({std_cart:.4f})"],
+            'HS-DT': [f"{hs_acc:.2f} ({std_hs:.4f})"],
+            'PCA-DT': [""],
+            'PCA-HS-DT': [""]
+        })
+        # Write the DataFrame to an Excel file
+        df.to_excel(f'{FILE_NAME}.xlsx', index=False)
+    elif PCA_VALUE == 'yes':
+        # Read existing data
+        try:
+            existing_df = pd.read_excel(f'{FILE_NAME}.xlsx')
+        except FileNotFoundError:
+            existing_df = pd.DataFrame(columns=['DATASET', 'DT', 'HS-DT', 'PCA-DT', 'PCA-HS-DT'])
 
+        df = existing_df.copy()
+
+        # Specify your dataset name and new values.
+        dataset_name = DATASET
+
+        # Check if the row for this dataset already exists.
+        if dataset_name in df['DATASET'].values:
+            # Update the existing row with new PCA values.
+            df.loc[df['DATASET'] == dataset_name, ['PCA-DT', 'PCA-HS-DT']] = [f"{cart_acc:.2f} ({std_cart:.4f})", f"{hs_acc:.2f} ({std_hs:.4f})"]
+        else:
+            # If the row doesn't exist, create it. You can also include other values as needed.
+            new_row = {
+                'DATASET': dataset_name,
+                'DT': [""],  # or provide a value if available
+                'HS-DT': [""],  # or provide a value if available
+                'PCA-DT': [f"{cart_acc:.2f} ({std_cart:.4f})"],
+                'PCA-HS-DT': [f"{hs_acc:.2f} ({std_hs:.4f})"]
+            }
+            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+        # Save the updated DataFrame back to the Excel file.
+        df.to_excel(f'{FILE_NAME}.xlsx', index=False)
+
+    print("Finished saving results to excel file!")
+
+
+
+if __name__ == "__main__":
     ######################## MODELS ########################
     cart_hscart_estimators = [
         model for model_group in ESTIMATORS_CLASSIFICATION
@@ -506,19 +558,32 @@ if __name__ == "__main__":
     print("HSCART Accuracy:", (hs_max_acc*100))
 
 
-    ######################## PLOTS ########################
+    # Group by 'Max Leaves' and calculate the STD for the group that corresponds with the highest accuracy
+    cart_mean_series = cart.groupby('Max Leaves')['Accuracy'].mean()
+    cart_best_group = cart_mean_series.idxmax()
+    cart_std = cart[cart['Max Leaves'] == cart_best_group]['Accuracy'].std()
 
+    hs_mean_series = hscart.groupby('Max Leaves')['Accuracy'].mean()
+    hs_best_group = hs_mean_series.idxmax()
+    hs_std = hscart[hscart['Max Leaves'] == hs_best_group]['Accuracy'].std()
+
+
+    ######################## WRITING TO EXCEL FILE ########################
+    save_to_excel((cart_max_acc*100), (hs_max_acc*100), cart_std, hs_std)
+
+
+    ######################## PLOTS ########################
     # AUC Score
-    plt.figure(figsize=(10,6))
-    plt.plot(cart_avg_auc['Max Leaves'], cart_avg_auc['AUC'], marker='o', linestyle='-', color='blue', label='CART AUC')
-    plt.plot(hs_avg_auc['Max Leaves'], hs_avg_auc['AUC'], marker='o', linestyle='-', color='red', label="HSCART AUC")
-    plt.xlabel("Number of Leaves")
-    plt.ylabel("AUC")
-    plt.grid(True)
-    plt.title(DATASET, fontsize=20)
-    plt.legend()
-    # plt.savefig("juvenile_class_au")
-    plt.show()
+    # plt.figure(figsize=(10,6))
+    # plt.plot(cart_avg_auc['Max Leaves'], cart_avg_auc['AUC'], marker='o', linestyle='-', color='blue', label='CART AUC')
+    # plt.plot(hs_avg_auc['Max Leaves'], hs_avg_auc['AUC'], marker='o', linestyle='-', color='red', label="HSCART AUC")
+    # plt.xlabel("Number of Leaves")
+    # plt.ylabel("AUC")
+    # plt.grid(True)
+    # plt.title(DATASET, fontsize=20)
+    # plt.legend()
+    # # plt.savefig("juvenile_class_au")
+    # plt.show()
 
     # Accuracy
     # plt.figure(figsize=(10, 6))

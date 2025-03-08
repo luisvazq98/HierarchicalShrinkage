@@ -103,7 +103,7 @@ DATASET_DIC = {
 
 
 # Name of desired dataset
-DATASET = "credit_card_clean"
+DATASET = "musae"
 
 # Getting dataset source from dataset dictionary
 SOURCE = DATASET_DIC[DATASET]['source']
@@ -479,46 +479,116 @@ def training_models(x, y, models):
 
 ######################## SAVING RESULTS TO EXCEL FILE ########################
 def save_to_excel(cart_acc, hs_acc, std_cart, std_hs):
-    if PCA_VALUE == 'no':
-        # Create a DataFrame with the results
-        df = pd.DataFrame({
-            'DATASET': [DATASET],
-            'DT': [f"{cart_acc:.2f} ({std_cart:.4f})"],
-            'HS-DT': [f"{hs_acc:.2f} ({std_hs:.4f})"],
-            'PCA-DT': [""],
-            'PCA-HS-DT': [""]
-        })
-        # Write the DataFrame to an Excel file
-        df.to_excel(f'{FILE_NAME}.xlsx', index=False)
-    elif PCA_VALUE == 'yes':
-        # Read existing data
-        try:
+    if os.path.exists(FILE_NAME):
+        if PCA_VALUE == 'no':
             existing_df = pd.read_excel(f'{FILE_NAME}.xlsx')
-        except FileNotFoundError:
-            existing_df = pd.DataFrame(columns=['DATASET', 'DT', 'HS-DT', 'PCA-DT', 'PCA-HS-DT'])
+            df = existing_df.copy()
+            dataset_name = DATASET
 
-        df = existing_df.copy()
+            # Check if the row for this dataset already exists. (In
+            if dataset_name in df['DATASET'].values:
+                # Update the existing row with new PCA values.
+                df.loc[df['DATASET'] == dataset_name, ['DT', 'HS-DT']] = [f"{cart_acc:.2f} ({std_cart:.4f})",
+                                                                          f"{hs_acc:.2f} ({std_hs:.4f})"]
+            else:
+                # If the row doesn't exist, create it. You can also include other values as needed.
+                new_row = {
+                    'DATASET': dataset_name,
+                    'DT': f"{cart_acc:.2f} ({std_cart:.4f})",
+                    'HS-DT': f"{hs_acc:.2f} ({std_hs:.4f})",
+                    'PCA-DT': [""],
+                    'PCA-HS-DT': [""]
+                }
+                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
-        # Specify your dataset name and new values.
-        dataset_name = DATASET
+            # Save the updated DataFrame back to the Excel file.
+            df.to_excel(f'{FILE_NAME}.xlsx', index=False)
 
-        # Check if the row for this dataset already exists.
-        if dataset_name in df['DATASET'].values:
-            # Update the existing row with new PCA values.
-            df.loc[df['DATASET'] == dataset_name, ['PCA-DT', 'PCA-HS-DT']] = [f"{cart_acc:.2f} ({std_cart:.4f})", f"{hs_acc:.2f} ({std_hs:.4f})"]
-        else:
-            # If the row doesn't exist, create it. You can also include other values as needed.
-            new_row = {
-                'DATASET': dataset_name,
-                'DT': [""],  # or provide a value if available
-                'HS-DT': [""],  # or provide a value if available
-                'PCA-DT': [f"{cart_acc:.2f} ({std_cart:.4f})"],
-                'PCA-HS-DT': [f"{hs_acc:.2f} ({std_hs:.4f})"]
-            }
-            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+        elif PCA_VALUE == 'yes':
+            existing_df = pd.read_excel(f'{FILE_NAME}.xlsx')
+            df = existing_df.copy()
+            dataset_name = DATASET
 
-        # Save the updated DataFrame back to the Excel file.
-        df.to_excel(f'{FILE_NAME}.xlsx', index=False)
+            # Check if the row for this dataset already exists.
+            if dataset_name in df['DATASET'].values:
+                # Update the existing row with new PCA values.
+                df.loc[df['DATASET'] == dataset_name, ['PCA-DT', 'PCA-HS-DT']] = [f"{cart_acc:.2f} ({std_cart:.4f})",
+                                                                                  f"{hs_acc:.2f} ({std_hs:.4f})"]
+            else:
+                # If the row doesn't exist, create it. You can also include other values as needed.
+                new_row = {
+                    'DATASET': dataset_name,
+                    'DT': [""],  # or provide a value if available
+                    'HS-DT': [""],  # or provide a value if available
+                    'PCA-DT': [f"{cart_acc:.2f} ({std_cart:.4f})"],
+                    'PCA-HS-DT': [f"{hs_acc:.2f} ({std_hs:.4f})"]
+                }
+                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+            # Save the updated DataFrame back to the Excel file.
+            df.to_excel(f'{FILE_NAME}.xlsx', index=False)
+
+    else:
+        if PCA_VALUE == 'no':
+            # Read existing data
+            try:
+                existing_df = pd.read_excel(f'{FILE_NAME}.xlsx')
+            except FileNotFoundError:
+                existing_df = pd.DataFrame(columns=['DATASET', 'DT', 'HS-DT', 'PCA-DT', 'PCA-HS-DT'])
+
+            df = existing_df.copy()
+            # Specify your dataset name and new values.
+            dataset_name = DATASET
+
+            # Check if the row for this dataset already exists.
+            if dataset_name in df['DATASET'].values:
+                # Update the existing row with new PCA values.
+                df.loc[df['DATASET'] == dataset_name, ['DT', 'HS-DT']] = [f"{cart_acc:.2f} ({std_cart:.4f})",
+                                                                          f"{hs_acc:.2f} ({std_hs:.4f})"]
+            else:
+                # If the row doesn't exist, create it. You can also include other values as needed.
+                new_row = {
+                    'DATASET': dataset_name,
+                    'DT': f"{cart_acc:.2f} ({std_cart:.4f})",
+                    'HS-DT': f"{hs_acc:.2f} ({std_hs:.4f})",
+                    'PCA-DT': [""],
+                    'PCA-HS-DT': [""]
+                }
+                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+            # Save the updated DataFrame back to the Excel file.
+            df.to_excel(f'{FILE_NAME}.xlsx', index=False)
+
+        elif PCA_VALUE == 'yes':
+            # Read existing data
+            try:
+                existing_df = pd.read_excel(f'{FILE_NAME}.xlsx')
+            except FileNotFoundError:
+                existing_df = pd.DataFrame(columns=['DATASET', 'DT', 'HS-DT', 'PCA-DT', 'PCA-HS-DT'])
+
+            df = existing_df.copy()
+
+            # Specify your dataset name and new values.
+            dataset_name = DATASET
+
+            # Check if the row for this dataset already exists.
+            if dataset_name in df['DATASET'].values:
+                # Update the existing row with new PCA values.
+                df.loc[df['DATASET'] == dataset_name, ['PCA-DT', 'PCA-HS-DT']] = [f"{cart_acc:.2f} ({std_cart:.4f})",
+                                                                                  f"{hs_acc:.2f} ({std_hs:.4f})"]
+            else:
+                # If the row doesn't exist, create it. You can also include other values as needed.
+                new_row = {
+                    'DATASET': dataset_name,
+                    'DT': [""],  # or provide a value if available
+                    'HS-DT': [""],  # or provide a value if available
+                    'PCA-DT': [f"{cart_acc:.2f} ({std_cart:.4f})"],
+                    'PCA-HS-DT': [f"{hs_acc:.2f} ({std_hs:.4f})"]
+                }
+                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+            # Save the updated DataFrame back to the Excel file.
+            df.to_excel(f'{FILE_NAME}.xlsx', index=False)
 
     print("Finished saving results to excel file!")
 

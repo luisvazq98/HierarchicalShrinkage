@@ -103,16 +103,20 @@ DATASET_DIC = {
 
 
 # Name of desired dataset
-DATASET = "musae"
+DATASET = "titanic"
 
 # Getting dataset source from dataset dictionary
 SOURCE = DATASET_DIC[DATASET]['source']
 
 # Yes or no for PCA
-PCA_VALUE = "no"
+PCA_VALUE = "yes"
 
 # Excel file name to save results
-FILE_NAME = "Results"
+FILE_NAME = "RF_Results"
+
+#
+VANILLA_MODEL = "Random_Forest"
+HS_MODEL = "HSEnsemble"
 
 print(f"Dataset: {DATASET}\nSource: {SOURCE}\nPCA: {PCA_VALUE}")
 
@@ -409,7 +413,7 @@ def training_models(x, y, models):
             model_class = model_config.cls
             model_kwargs = model_config.kwargs.copy()
 
-            if model_name == "CART":
+            if model_name == VANILLA_MODEL:
                 # Training model
                 cart_model = model_class(**model_kwargs)
                 start_time = time.time()
@@ -429,17 +433,17 @@ def training_models(x, y, models):
 
                 # Append CART results
                 results.append({
-                    'Model': 'CART',
+                    'Model': VANILLA_MODEL,
                     'Max Leaves': model_kwargs['max_leaf_nodes'],
-                    'Max Depth': cart_model.tree_.max_depth,
-                    'Node Count': cart_model.tree_.node_count,
+                    # 'Max Depth': cart_model.tree_.max_depth,
+                    # 'Node Count': cart_model.tree_.node_count,
                     'Lambda': None,
                     'AUC': auc_cart,
                     'Accuracy': accuracy,
                     'Time (min)': (end_time - start_time) / 60,
                     'Split Seed': i
                 })
-            elif model_name == "HSCART":
+            elif model_name == HS_MODEL:
                 # Training model
                 hs_model = model_class(**model_kwargs)
                 start_time = time.time()
@@ -459,10 +463,10 @@ def training_models(x, y, models):
 
                 # Append HSCART results
                 results.append({
-                    'Model': 'HSCART',
+                    'Model': HS_MODEL,
                     'Max Leaves': model_kwargs['max_leaf_nodes'],
-                    'Max Depth': hs_model.estimator_.tree_.max_depth,
-                    'Node Count': hs_model.estimator_.tree_.node_count,
+                    # 'Max Depth': hs_model.estimator_.tree_.max_depth,
+                    # 'Node Count': hs_model.estimator_.tree_.node_count,
                     'Lambda': hs_model.reg_param,
                     'AUC': auc_hscart,
                     'Accuracy': accuracy,
@@ -596,14 +600,22 @@ def save_to_excel(cart_acc, hs_acc, std_cart, std_hs):
 
 if __name__ == "__main__":
     ######################## MODELS ########################
+    """
+    "----------- Model Names -----------"
+    - CART 
+    - HSCART
+    - Random_Forest
+    - HSEnsemble
+    "-----------------------------------"
+    """
     cart_hscart_estimators = [
         model for model_group in ESTIMATORS_CLASSIFICATION
         for model in model_group
-        if model.name in ['CART', 'HSCART']
+        if model.name in [VANILLA_MODEL, HS_MODEL]
     ]
-
     # Use the following function only if above does not work
     # models = get_models()
+
 
     ######################## DATASET ########################
     # x, y = get_regression_dataset(DATASET)
@@ -614,8 +626,8 @@ if __name__ == "__main__":
     results_df = training_models(X, Y, cart_hscart_estimators)
 
     ######################## GETTING METRICS ########################
-    cart = results_df[results_df['Model']=="CART"]
-    hscart = results_df[results_df['Model']=='HSCART']
+    cart = results_df[results_df['Model']==VANILLA_MODEL]
+    hscart = results_df[results_df['Model']==HS_MODEL]
 
     # Group by 'Max Leaves' and calculate the average AUC
     cart_avg_auc = cart.groupby('Max Leaves')['AUC'].mean().reset_index()

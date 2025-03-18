@@ -103,13 +103,13 @@ DATASET_DIC = {
 
 
 # Name of desired dataset
-DATASET = "titanic"
+DATASET = "gait"
 
 # Getting dataset source from dataset dictionary
 SOURCE = DATASET_DIC[DATASET]['source']
 
 # Yes or no for PCA
-PCA_VALUE = "yes"
+PCA_VALUE = "no"
 
 # Excel file name to save results
 FILE_NAME = "RF_Results"
@@ -390,6 +390,7 @@ def training_models(x, y, models):
     print("------- Starting to train model -------")
     results = []
     for i in range(0, 10):
+        print(f"Currently on seed: {i}")
         if SOURCE == 'imodels':
             train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=1/3, random_state=i)
         else:

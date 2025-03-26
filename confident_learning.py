@@ -33,13 +33,6 @@ NOISE_RATIO = 0.49
 
 ######################## NOISE INJECTION ########################
 def introduce_label_noise(y, noise_ratio=0.2, random_state=42):
-    """
-    For binary classification:
-      Flips labels (0->1 and 1->0).
-
-    For multi-class classification:
-      Randomly replaces a fraction of labels with a different class.
-    """
     np.random.seed(random_state)
     y_noisy = y.copy()
     n_samples = len(y)
@@ -355,38 +348,14 @@ if __name__ == "__main__":
     results_denoised = training_models_denoised(train_x_denoised, train_y_denoised, test_x, test_y,
                                                 cart_hscart_estimators)
 
-    # -------------------------
-    # Print and Plot Comparison Metrics
-    # -------------------------
-    print("Noisy Data Results:")
-    print(results_noisy.groupby('Model')[['AUC', 'Accuracy']].mean())
-    print("Denoised Data Results:")
-    print(results_denoised.groupby('Model')[['AUC', 'Accuracy']].mean())
 
-    # # Plot comparison. For multi-class problems, we are using AUC computed with multi_class='ovr'.
-    # fig, ax = plt.subplots(1, 2, figsize=(14, 6))
-    # for dataset_results, title, ax in zip([results_noisy, results_denoised],
-    #                                       ["Noisy Data", "Denoised Data"],
-    #                                       ax.flatten()):
-    #     cart_res = dataset_results[dataset_results['Model'] == 'CART'].groupby('Max Leaves')['AUC'].mean().reset_index()
-    #     hs_res = dataset_results[dataset_results['Model'] == 'HSCART'].groupby('Max Leaves')['AUC'].mean().reset_index()
-    #     ax.plot(cart_res['Max Leaves'], cart_res['AUC'], marker='o', linestyle='-', color='blue', label='CART AUC')
-    #     ax.plot(hs_res['Max Leaves'], hs_res['AUC'], marker='o', linestyle='-', color='red', label='HSCART AUC')
-    #     ax.set_title(title)
-    #     ax.set_xlabel("Number of Leaves")
-    #     ax.set_ylabel("AUC")
-    #     ax.grid(True)
-    #     ax.legend()
-    # plt.tight_layout()
-    # plt.title("student performance 49%")
-    # plt.savefig("student performance_49")
-    # plt.show()
 
-    #Define noise levels as fractions (for 1%, 5%, 10%, 15%, 30%, 45%, 49%)
+
+
+    #region AUC
     noise_levels = [0.01, 0.05, 0.10, 0.15, 0.30, 0.45, 0.49]
 
-    # Dictionaries to store results for each noise level:
-    # For each condition (noisy, denoised) and each model, we store a DataFrame keyed by noise level.
+
     results_by_noise_noisy = {'CART': {}, 'HSCART': {}}
     results_by_noise_denoised = {'CART': {}, 'HSCART': {}}
 
@@ -432,8 +401,6 @@ if __name__ == "__main__":
 
 
 
-    # # --------- Plotting ---------
-
     # Create two figures: one for Noisy Data and one for Denoised Data.
     # In each figure, we have two subplots: left for CART and right for HSCART.
     # In each subplot, each line (color/marker) corresponds to one noise level.
@@ -468,7 +435,7 @@ if __name__ == "__main__":
     axs1[1].legend(title="Noise Level")
     #fig1.suptitle("Credit Card on Noisy Data", fontsize=16)
     fig1.tight_layout(rect=[0, 0, 1, 0.95])
-    plt.savefig("student_noisy_auc")
+    #plt.savefig("student_noisy_auc")
     plt.show()
 
     # Plot for Denoised Data
@@ -497,13 +464,21 @@ if __name__ == "__main__":
     axs2[1].legend(title="Noise Level")
     #fig2.suptitle("Credit Card on Denoised Data", fontsize=16)
     fig2.tight_layout(rect=[0, 0, 1, 0.95])
-    plt.savefig("student_denoised_auc")
+    #plt.savefig("student_denoised_auc")
     plt.show()
+    #endregion
 
 
 
 
-    ###############################
+
+
+
+
+
+
+
+####################################################################################################################
 
     # # Noise levels to test (as fractions)
     # noise_levels_to_plot = [0.01, 0.15, 0.30]
@@ -596,12 +571,11 @@ if __name__ == "__main__":
 
 
 
-
-
-
+#region Accuracy
+# -------------------------
+# Plots with multiple lines (ACCURACY)
+# -------------------------
 ######################## ACCURACY ########################
-import matplotlib.pyplot as plt
-
 # Define noise levels as fractions corresponding to 1%, 5%, 10%, 15%, 30%, 45%, 49%
 noise_levels = [0.01, 0.05, 0.10, 0.15, 0.30, 0.45, 0.49]
 
@@ -649,13 +623,6 @@ for noise in noise_levels:
     for model in ['CART', 'HSCART']:
         df = results_denoised[results_denoised['Model'] == model].groupby('Max Leaves')['Accuracy'].mean().reset_index()
         results_by_noise_denoised[model][noise] = df
-
-
-
-
-
-
-
 
 
 
@@ -723,5 +690,6 @@ for idx, noise in enumerate(noise_levels):
 axs2[0].legend(title="Noise Level")
 axs2[1].legend(title="Noise Level")
 fig2.tight_layout(rect=[0, 0, 1, 0.95])
-plt.savefig("student_denoised_acc")
+#plt.savefig("student_denoised_acc")
 plt.show()
+#endregion

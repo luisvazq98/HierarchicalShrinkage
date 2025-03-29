@@ -1,3 +1,4 @@
+#region LIBRARIES AND VARIABLES
 import pandas as pd
 import numpy as np
 import sys
@@ -29,9 +30,9 @@ DATASET = "student performance"  # Example multi-class dataset
 SOURCE = "kaggle"
 PCA_VALUE = "no"
 NOISE_RATIO = 0.49
+#endregion
 
-
-######################## NOISE INJECTION ########################
+#region FUNCTIONS
 def introduce_label_noise(y, noise_ratio=0.2, random_state=42):
     np.random.seed(random_state)
     y_noisy = y.copy()
@@ -49,9 +50,6 @@ def introduce_label_noise(y, noise_ratio=0.2, random_state=42):
             possible_labels = [label for label in unique_labels if label != y[idx]]
             y_noisy[idx] = np.random.choice(possible_labels)
     return y_noisy, indices
-
-
-######################## DATA LOADING ########################
 def get_classification_dataset(dataset, source):
     if source == 'imodels':
         x, y, features = get_clean_dataset(dataset, source, return_target_col_names=True)
@@ -153,9 +151,6 @@ def get_classification_dataset(dataset, source):
             x = data_titanic.drop('Survived', axis=1)
             y = data_titanic['Survived']
             return x, y, None
-
-
-######################## TRAINING MODELS ########################
 def training_models(x, y, models):
     results = []
     for i in range(0, 10):
@@ -228,7 +223,7 @@ def training_models(x, y, models):
                     'Split Seed': i
                 })
     return pd.DataFrame(results)
-
+#endregion
 
 ######################## MAIN EXPERIMENT ########################
 if __name__ == "__main__":
@@ -242,9 +237,16 @@ if __name__ == "__main__":
     # Load the clean dataset first
     X, Y, features = get_classification_dataset(DATASET, SOURCE)
 
+
+
+
+
     # Introduce noise to the labels (works for both binary and multi-class)
     Y_noisy, noisy_indices = introduce_label_noise(Y, noise_ratio=NOISE_RATIO)
     print(f"Introduced noise in {len(noisy_indices)} out of {len(Y)} samples.")
+
+
+
 
     # -------------------------
     # Experiment Part 1: Train on Noisy Data
@@ -252,10 +254,15 @@ if __name__ == "__main__":
     print("Training on noisy data...")
     results_noisy = training_models(X, Y_noisy, cart_hscart_estimators)
 
+
+
+
+
+
     # -------------------------
     # Denoising Step: Use Cleanlab to filter out probable label issues from training data
     print("Performing denoising using Cleanlab...")
-    train_x_full, _, train_y_noisy, _ = train_test_split(X, Y_noisy, test_size=1 / 3, random_state=0)
+    train_x_full, _, train_y_noisy, _ = train_test_split(X, Y_noisy, test_size=1/3, random_state=0)
     if SOURCE != 'imodels':
         train_x_full = train_x_full.reset_index(drop=True).to_numpy()
         train_y_noisy = train_y_noisy.reset_index(drop=True).to_numpy()
@@ -278,6 +285,8 @@ if __name__ == "__main__":
     mask[noise_indices_est] = False
     train_x_denoised = train_x_full[mask]
     train_y_denoised = train_y_noisy[mask]
+
+
 
 
     # -------------------------
@@ -352,133 +361,124 @@ if __name__ == "__main__":
 
 
 
-    #region AUC
-    noise_levels = [0.01, 0.05, 0.10, 0.15, 0.30, 0.45, 0.49]
+#region AUC
+noise_levels = [0.01, 0.05, 0.10, 0.15, 0.30, 0.45, 0.49]
 
 
-    results_by_noise_noisy = {'CART': {}, 'HSCART': {}}
-    results_by_noise_denoised = {'CART': {}, 'HSCART': {}}
+results_by_noise_noisy = {'CART': {}, 'HSCART': {}}
+results_by_noise_denoised = {'CART': {}, 'HSCART': {}}
 
-    for noise in noise_levels:
-        # ----- Experiment for Noisy Data -----
-        Y_noisy, _ = introduce_label_noise(Y, noise_ratio=noise)
-        results_noisy = training_models(X, Y_noisy, cart_hscart_estimators)
-        # Group the results by Max Leaves for each model
-        for model in ['CART', 'HSCART']:
-            df = results_noisy[results_noisy['Model'] == model].groupby('Max Leaves')['AUC'].mean().reset_index()
-            results_by_noise_noisy[model][noise] = df
+for noise in noise_levels:
+    # ----- Experiment for Noisy Data -----
+    Y_noisy, _ = introduce_label_noise(Y, noise_ratio=noise)
+    results_noisy = training_models(X, Y_noisy, cart_hscart_estimators)
+    # Group the results by Max Leaves for each model
+    for model in ['CART', 'HSCART']:
+        df = results_noisy[results_noisy['Model'] == model].groupby('Max Leaves')['AUC'].mean().reset_index()
+        results_by_noise_noisy[model][noise] = df
 
-        # ----- Experiment for Denoised Data (after confident learning) -----
-        # Split training and test sets based on the noisy labels
-        train_x_full, _, train_y_noisy, _ = train_test_split(X, Y_noisy, test_size=1 / 3, random_state=0)
-        if SOURCE != 'imodels':
-            train_x_full = train_x_full.reset_index(drop=True).to_numpy()
-            train_y_noisy = train_y_noisy.reset_index(drop=True).to_numpy()
-        train_y_noisy = train_y_noisy.astype(int)
+    # ----- Experiment for Denoised Data (after confident learning) -----
+    # Split training and test sets based on the noisy labels
+    train_x_full, _, train_y_noisy, _ = train_test_split(X, Y_noisy, test_size=1 / 3, random_state=0)
+    if SOURCE != 'imodels':
+        train_x_full = train_x_full.reset_index(drop=True).to_numpy()
+        train_y_noisy = train_y_noisy.reset_index(drop=True).to_numpy()
+    train_y_noisy = train_y_noisy.astype(int)
 
-        # Train a base DecisionTreeClassifier for confident learning (Cleanlab)
-        base_model = DecisionTreeClassifier(max_leaf_nodes=30, random_state=0)
-        base_model.fit(train_x_full, train_y_noisy)
-        probas = base_model.predict_proba(train_x_full)
-        noise_indices_est = find_label_issues(labels=train_y_noisy, pred_probs=probas,
-                                              return_indices_ranked_by='normalized_margin')
-        mask = np.ones(len(train_y_noisy), dtype=bool)
-        mask[noise_indices_est] = False
-        train_x_denoised = train_x_full[mask]
-        train_y_denoised = train_y_noisy[mask]
+    # Train a base DecisionTreeClassifier for confident learning (Cleanlab)
+    base_model = DecisionTreeClassifier(max_leaf_nodes=30, random_state=0)
+    base_model.fit(train_x_full, train_y_noisy)
+    probas = base_model.predict_proba(train_x_full)
+    noise_indices_est = find_label_issues(labels=train_y_noisy, pred_probs=probas,
+                                          return_indices_ranked_by='normalized_margin')
+    mask = np.ones(len(train_y_noisy), dtype=bool)
+    mask[noise_indices_est] = False
+    train_x_denoised = train_x_full[mask]
+    train_y_denoised = train_y_noisy[mask]
 
-        # Create a test set from the noisy data
-        _, test_x, _, test_y = train_test_split(X, Y_noisy, test_size=1 / 3, random_state=0)
-        if SOURCE != 'imodels':
-            test_x = test_x.reset_index(drop=True).to_numpy()
-            test_y = test_y.reset_index(drop=True).to_numpy()
+    # Create a test set from the noisy data
+    _, test_x, _, test_y = train_test_split(X, Y_noisy, test_size=1 / 3, random_state=0)
+    if SOURCE != 'imodels':
+        test_x = test_x.reset_index(drop=True).to_numpy()
+        test_y = test_y.reset_index(drop=True).to_numpy()
 
-        results_denoised = training_models_denoised(train_x_denoised, train_y_denoised, test_x, test_y,
-                                                    cart_hscart_estimators)
-        for model in ['CART', 'HSCART']:
-            df = results_denoised[results_denoised['Model'] == model].groupby('Max Leaves')['AUC'].mean().reset_index()
-            results_by_noise_denoised[model][noise] = df
-
-
-
-    # Create two figures: one for Noisy Data and one for Denoised Data.
-    # In each figure, we have two subplots: left for CART and right for HSCART.
-    # In each subplot, each line (color/marker) corresponds to one noise level.
-
-    # Colors and markers for distinguishing noise levels
-    colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink']
-    markers = ['o', 's', 'D', '^', 'v', 'P', 'X']
-
-    # Plot for Noisy Data
-    fig1, axs1 = plt.subplots(ncols=2, figsize=(12, 6))
-    for idx, noise in enumerate(noise_levels):
-        # For CART
-        df_cart = results_by_noise_noisy['CART'][noise]
-        axs1[0].plot(df_cart['Max Leaves'], df_cart['AUC'], marker=markers[idx],
-                     color=colors[idx], linestyle='-', label=f"{int(noise * 100)}% noise")
-        axs1[0].set_title("CART - Noisy Data", fontsize=25)
-        axs1[0].set_xlabel("Max Leaves", fontsize=20)
-        axs1[0].set_ylabel("AUC", fontsize=20)
-        axs1[0].grid(True)
-
-        # For HSCART
-        df_hs = results_by_noise_noisy['HSCART'][noise]
-        axs1[1].plot(df_hs['Max Leaves'], df_hs['AUC'], marker=markers[idx],
-                     color=colors[idx], linestyle='-', label=f"{int(noise * 100)}% noise")
-        axs1[1].set_title("HSCART - Noisy Data", fontsize=25)
-        axs1[1].set_xlabel("Max Leaves", fontsize=20)
-        axs1[1].set_ylabel("AUC", fontsize=20)
-        axs1[1].grid(True)
-
-    # Create legends for the noisy data figure
-    axs1[0].legend(title="Noise Level")
-    axs1[1].legend(title="Noise Level")
-    #fig1.suptitle("Credit Card on Noisy Data", fontsize=16)
-    fig1.tight_layout(rect=[0, 0, 1, 0.95])
-    #plt.savefig("student_noisy_auc")
-    plt.show()
-
-    # Plot for Denoised Data
-    fig2, axs2 = plt.subplots(ncols=2, figsize=(12, 6))
-    for idx, noise in enumerate(noise_levels):
-        # For CART
-        df_cart = results_by_noise_denoised['CART'][noise]
-        axs2[0].plot(df_cart['Max Leaves'], df_cart['AUC'], marker=markers[idx],
-                     color=colors[idx], linestyle='-', label=f"{int(noise * 100)}% noise")
-        axs2[0].set_title("CART - Denoised Data", fontsize=25)
-        axs2[0].set_xlabel("Max Leaves", fontsize=20)
-        axs2[0].set_ylabel("AUC", fontsize=20)
-        axs2[0].grid(True)
-
-        # For HSCART
-        df_hs = results_by_noise_denoised['HSCART'][noise]
-        axs2[1].plot(df_hs['Max Leaves'], df_hs['AUC'], marker=markers[idx],
-                     color=colors[idx], linestyle='-', label=f"{int(noise * 100)}% noise")
-        axs2[1].set_title("HSCART - Denoised Data", fontsize=25)
-        axs2[1].set_xlabel("Max Leaves", fontsize=20)
-        axs2[1].set_ylabel("AUC", fontsize=20)
-        axs2[1].grid(True)
-
-    # Create legends for the denoised data figure
-    axs2[0].legend(title="Noise Level")
-    axs2[1].legend(title="Noise Level")
-    #fig2.suptitle("Credit Card on Denoised Data", fontsize=16)
-    fig2.tight_layout(rect=[0, 0, 1, 0.95])
-    #plt.savefig("student_denoised_auc")
-    plt.show()
-    #endregion
+    results_denoised = training_models_denoised(train_x_denoised, train_y_denoised, test_x, test_y,
+                                                cart_hscart_estimators)
+    for model in ['CART', 'HSCART']:
+        df = results_denoised[results_denoised['Model'] == model].groupby('Max Leaves')['AUC'].mean().reset_index()
+        results_by_noise_denoised[model][noise] = df
 
 
 
+# Create two figures: one for Noisy Data and one for Denoised Data.
+# In each figure, we have two subplots: left for CART and right for HSCART.
+# In each subplot, each line (color/marker) corresponds to one noise level.
 
+# Colors and markers for distinguishing noise levels
+colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink']
+markers = ['o', 's', 'D', '^', 'v', 'P', 'X']
 
+# Plot for Noisy Data
+fig1, axs1 = plt.subplots(ncols=2, figsize=(12, 6))
+for idx, noise in enumerate(noise_levels):
+    # For CART
+    df_cart = results_by_noise_noisy['CART'][noise]
+    axs1[0].plot(df_cart['Max Leaves'], df_cart['AUC'], marker=markers[idx],
+                 color=colors[idx], linestyle='-', label=f"{int(noise * 100)}% noise")
+    axs1[0].set_title("CART - Noisy Data", fontsize=25)
+    axs1[0].set_xlabel("Max Leaves", fontsize=20)
+    axs1[0].set_ylabel("AUC", fontsize=20)
+    axs1[0].grid(True)
 
+    # For HSCART
+    df_hs = results_by_noise_noisy['HSCART'][noise]
+    axs1[1].plot(df_hs['Max Leaves'], df_hs['AUC'], marker=markers[idx],
+                 color=colors[idx], linestyle='-', label=f"{int(noise * 100)}% noise")
+    axs1[1].set_title("HSCART - Noisy Data", fontsize=25)
+    axs1[1].set_xlabel("Max Leaves", fontsize=20)
+    axs1[1].set_ylabel("AUC", fontsize=20)
+    axs1[1].grid(True)
 
+# Create legends for the noisy data figure
+axs1[0].legend(title="Noise Level")
+axs1[1].legend(title="Noise Level")
+#fig1.suptitle("Credit Card on Noisy Data", fontsize=16)
+fig1.tight_layout(rect=[0, 0, 1, 0.95])
+#plt.savefig("student_noisy_auc")
+plt.show()
 
+# Plot for Denoised Data
+fig2, axs2 = plt.subplots(ncols=2, figsize=(12, 6))
+for idx, noise in enumerate(noise_levels):
+    # For CART
+    df_cart = results_by_noise_denoised['CART'][noise]
+    axs2[0].plot(df_cart['Max Leaves'], df_cart['AUC'], marker=markers[idx],
+                 color=colors[idx], linestyle='-', label=f"{int(noise * 100)}% noise")
+    axs2[0].set_title("CART - Denoised Data", fontsize=25)
+    axs2[0].set_xlabel("Max Leaves", fontsize=20)
+    axs2[0].set_ylabel("AUC", fontsize=20)
+    axs2[0].grid(True)
 
+    # For HSCART
+    df_hs = results_by_noise_denoised['HSCART'][noise]
+    axs2[1].plot(df_hs['Max Leaves'], df_hs['AUC'], marker=markers[idx],
+                 color=colors[idx], linestyle='-', label=f"{int(noise * 100)}% noise")
+    axs2[1].set_title("HSCART - Denoised Data", fontsize=25)
+    axs2[1].set_xlabel("Max Leaves", fontsize=20)
+    axs2[1].set_ylabel("AUC", fontsize=20)
+    axs2[1].grid(True)
 
+# Create legends for the denoised data figure
+axs2[0].legend(title="Noise Level")
+axs2[1].legend(title="Noise Level")
+#fig2.suptitle("Credit Card on Denoised Data", fontsize=16)
+fig2.tight_layout(rect=[0, 0, 1, 0.95])
+#plt.savefig("student_denoised_auc")
+plt.show()
+#endregion
 
-####################################################################################################################
+########################################################################################################################
+#region Boxplots
 
     # # Noise levels to test (as fractions)
     # noise_levels_to_plot = [0.01, 0.15, 0.30]
@@ -569,13 +569,10 @@ if __name__ == "__main__":
     # plt.savefig("student_performance_box_denoised")
     # plt.show()
 
+#endregion
 
-
+########################################################################################################################
 #region Accuracy
-# -------------------------
-# Plots with multiple lines (ACCURACY)
-# -------------------------
-######################## ACCURACY ########################
 # Define noise levels as fractions corresponding to 1%, 5%, 10%, 15%, 30%, 45%, 49%
 noise_levels = [0.01, 0.05, 0.10, 0.15, 0.30, 0.45, 0.49]
 
@@ -588,6 +585,8 @@ for noise in noise_levels:
     # ----- Experiment for Noisy Data -----
     Y_noisy, _ = introduce_label_noise(Y, noise_ratio=noise)
     results_noisy = training_models(X, Y_noisy, cart_hscart_estimators)
+
+
     # Group the results by Max Leaves for each model (using Accuracy)
     for model in ['CART', 'HSCART']:
         df = results_noisy[results_noisy['Model'] == model].groupby('Max Leaves')['Accuracy'].mean().reset_index()
@@ -627,7 +626,6 @@ for noise in noise_levels:
 
 
 # --------- Plotting ---------
-
 # Create two figures: one for Noisy Data and one for Denoised Data.
 # In each figure, we have two subplots: left for CART and right for HSCART.
 # In each subplot, each line (color/marker) corresponds to one noise level.

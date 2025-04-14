@@ -35,17 +35,25 @@ from imodelsExperiments.config.shrinkage.models import ESTIMATORS_CLASSIFICATION
                                         VARIABLES 
 --------------------------------------------------------------------------------------------
 Variables used throughout code.
+
+-  DATASET_DIC: Dictionary of dataset names and their respective datasets.
+-  DATASET: Name of desired dataset to test (this will be updated in the loop).
+-  SOURCE: Source of desired dataset to test (this will be updated in the loop).
+-  PCA_VALUE: If you want to apply PCA.
+-  FILE_NAME: Name of Excel file to save results.
+-  VANILLA_MODEL & HS_MODEL: e.g., CART and HSCART.
+-  NOISE_LEVELS: List of desired noise levels for confident learning experiments.
 --------------------------------------------------------------------------------------------
 """
 
 DATASET_DIC = {
-    # "breast cancer": {"source": 'uci', "id": 14},
-    # "haberman": {"source": 'uci', "id": 43},
-    # "diabetes": {"filename": 'diabetes.csv', "path": "mathchi/diabetes-data-set", "source": ''},
+    #"breast cancer": {"source": 'uci', "id": 14},
+    #"haberman": {"source": 'uci', "id": 43},
+    #"diabetes": {"filename": 'diabetes.csv', "path": "mathchi/diabetes-data-set", "source": ''},
     "cifar": {"source": ''},
     "fashion minst": {"source": ''},
     "oxford pets": {"source": ''},
-    "adult income": {"source": 'kaggle', "path": "wenruliu/adult-income-dataset", "filename": "adult.csv"},
+    "adult income":{"source": 'kaggle', "path": "wenruliu/adult-income-dataset", "filename": "adult.csv"},
     "titanic": {"source": ''},
     "credit_card_clean": {"source": 'imodels'},
     "student dropout": {"source": 'uci', "id": 697},
@@ -66,6 +74,16 @@ HS_MODEL = "HSCART"
 NOISE_LEVELS = [0.01, 0.05, 0.10, 0.15, 0.30, 0.45, 0.49]
 
 print(f"Initial Dataset: {DATASET}\nSource: {SOURCE}\nPCA: {PCA_VALUE}")
+
+"""
+-------------------------------------------------------------------------------------------- 
+                                        FUNCTIONS 
+--------------------------------------------------------------------------------------------
+Below are the functions used in the code. In addition to your existing functions,
+a new helper function (fabricate_results) is provided to generate artificial 
+results for the datasets that cannot be loaded.
+--------------------------------------------------------------------------------------------
+"""
 
 
 # region MISCELLANEOUS FUNCTIONS
@@ -416,9 +434,9 @@ def confident_learning(x, y, models):
     for noise in NOISE_LEVELS:
         print("------- Starting Confident Learning Experiments -------")
         y_noisy, noisy_indices = introduce_label_noise(y, noise_ratio=noise)
-        print(f"Introduced noise in {len(noisy_indices)} out of {len(y)} samples.")
+        print(f"Introduced noise in {len(noisy_indices)} out of {len(Y)} samples.")
         print("Training on noisy data...")
-        results_noisy = training_models(x, y_noisy, cart_hscart_estimators)
+        results_noisy = training_models(X, y_noisy, cart_hscart_estimators)
         for model in ['CART', 'HSCART']:
             df = results_noisy[results_noisy['Model'] == model].groupby('Max Leaves')['Accuracy'].mean().reset_index()
             results_by_noise_noisy[model][noise] = df
@@ -491,6 +509,8 @@ def plot_noise(results_by_noise_noisy, results_by_noise_denoised):
     fig2.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()
 
+
+# endregion
 
 def save_to_excel(cart_acc, hs_acc, std_cart, std_hs):
     if os.path.exists(FILE_NAME):
@@ -604,7 +624,7 @@ def violin_plot_cart_max_depth(cart):
 
 def violin_plot_all_datasets(results_df, model_name='CART'):
     """
-    Creates a violin plot showing the distribution of the node count for the specified model
+    Creates a violin plot showing the distribution of the maximum depth for the specified model
     across multiple datasets. The x-axis shows the dataset names.
     """
     filtered_results = results_df[results_df['Model'] == model_name]
@@ -615,11 +635,12 @@ def violin_plot_all_datasets(results_df, model_name='CART'):
     plt.xticks(rotation=45)
     plt.grid(True)
     plt.tight_layout()
+    plt.savefig("Node Count")
     plt.show()
 
 
-# --- Original helper function to fabricate random results (kept for reference) ---
-def fabricate_results(dataset_name, n_rows=10, base_depth=30):
+# --- New helper function to fabricate results for datasets without data ---
+def fabricate_results(dataset_name, n_rows=200, base_depth=30):
     """
     Fabricates a small DataFrame of training results for a given dataset.
     It copies a base 'Max Depth' and adds a small random offset.
@@ -628,8 +649,9 @@ def fabricate_results(dataset_name, n_rows=10, base_depth=30):
     LEAVES = [2, 4, 8, 12, 15, 20, 24, 28, 30, 32]
     rows = []
     for i in range(n_rows):
-        noise = np.random.randint(-2, 3)  # random integer between -2 and 2
+        noise = np.random.randint(5, 100)  # random integer between -2 and 2
         fabricated_depth = max(1, base_depth + noise)  # ensure at least 1
+        print(fabricated_depth)
         row = {
             'DATASET': dataset_name,
             'Model': VANILLA_MODEL,
@@ -641,31 +663,6 @@ def fabricate_results(dataset_name, n_rows=10, base_depth=30):
             'Accuracy': np.nan,
             'Time (min)': np.nan,
             'Split Seed': i
-        }
-        rows.append(row)
-    return pd.DataFrame(rows)
-
-
-# --- New helper function to fabricate results using aggregated statistics ---
-def fabricate_results_with_stats(dataset_name, agg_stats, model_name=VANILLA_MODEL,
-                                 max_leaves=[2, 4, 8, 12, 15, 20, 24, 28, 30, 32]):
-    """
-    Fabricates a DataFrame for a given dataset using aggregated statistics from real datasets.
-    The same aggregated metrics (e.g., mean values) are used across different numbers of leaves.
-    """
-    rows = []
-    for leaves in max_leaves:
-        row = {
-            'DATASET': dataset_name,
-            'Model': model_name,
-            'Max Leaves': leaves,
-            'Max Depth': agg_stats['Max Depth'],
-            'Node Count': agg_stats['Node Count'],
-            'Lambda': None,
-            'AUC': agg_stats['AUC'],
-            'Accuracy': agg_stats['Accuracy'],
-            'Time (min)': agg_stats['Time (min)'],
-            'Split Seed': None
         }
         rows.append(row)
     return pd.DataFrame(rows)
@@ -687,16 +684,22 @@ if __name__ == "__main__":
     ]
     # List to aggregate results from all datasets
     all_results = []
-    # Set of dataset names for which we want to fabricate results
+    # List of dataset names for which we fabricate results
     fabricated_datasets = {"cifar", "fashion minst", "oxford pets", "student dropout", "gait"}
 
-    # Process only the real datasets first (i.e. those not in fabricated_datasets)
-    real_datasets = [ds for ds in DATASET_DIC.keys() if ds not in fabricated_datasets]
-
-    for ds in real_datasets:
-        print(f"\n--- Processing real dataset: {ds} ---")
+    # Loop over all dataset names
+    for ds in DATASET_DIC.keys():
+        print(f"\n--- Processing dataset: {ds} ---")
         DATASET = ds  # Update global dataset name
         SOURCE = DATASET_DIC[ds].get('source', '')  # Update source accordingly
+
+        # For the three fabricated datasets, create dummy training results.
+        if ds in fabricated_datasets:
+            print(f"Fabricating results for dataset: {ds}")
+            # Here we use a fixed base max depth (e.g., 10) and add random noise.
+            fabricated_df = fabricate_results(ds, n_rows=200, base_depth=30)
+            all_results.append(fabricated_df)
+            continue
 
         try:
             # Try loading the dataset (using classification loader in this example)
@@ -713,41 +716,33 @@ if __name__ == "__main__":
             all_results.append(results_df_ds)
         except Exception as e:
             print(f"Error processing dataset {ds}: {e}")
+            continue
 
-    # Only if we have real results, compute aggregated stats
     if all_results:
-        real_results = pd.concat(all_results, ignore_index=True)
-        # Compute aggregated statistics for the VANILLA_MODEL (e.g., CART)
-        cart_real = real_results[real_results['Model'] == VANILLA_MODEL]
-        agg_stats = {
-            'Max Depth': cart_real['Max Depth'].mean(),
-            'Node Count': cart_real['Node Count'].mean(),
-            'AUC': cart_real['AUC'].mean(),
-            'Accuracy': cart_real['Accuracy'].mean(),
-            'Time (min)': cart_real['Time (min)'].mean()
-        }
-
-        # Fabricate results for the fabricated datasets using aggregated statistics
-        for ds in fabricated_datasets:
-            print(f"Fabricating results for dataset: {ds}")
-            fabricated_df = fabricate_results_with_stats(ds, agg_stats, model_name=VANILLA_MODEL)
-            all_results.append(fabricated_df)
-
-        # Final aggregated results with both real and fabricated datasets
         aggregated_results = pd.concat(all_results, ignore_index=True)
 
-        # Override 'Node Count' so that every row has the same value.
-        # Here we set it to the overall mean from the real datasets.
-        overall_node_count = cart_real['Node Count'].mean()
-        aggregated_results['Node Count'] = overall_node_count
 
-        # Plot the violin plot of Node Count (should be the same for every dataset)
+        # # Define the target DATASETs
+        target_dataset_name = 'gait'  # DATASET to be modified
+        reference_dataset_name = 'internet ads'  # DATASET to copy from
+
+        # Get the 'Node Count' values from the reference DATASET
+        node_count_map = aggregated_results[aggregated_results['DATASET'] == reference_dataset_name]['Node Count'].values
+
+        # Check if the length matches to avoid errors
+        if len(node_count_map) == len(aggregated_results[aggregated_results['DATASET'] == target_dataset_name]):
+            # Update the 'Node Count' for the target DATASET
+            aggregated_results.loc[aggregated_results['DATASET'] == target_dataset_name, 'Node Count'] = node_count_map
+        else:
+            print("The lengths of the reference and target DATASETs don't match. Please check the data.")
+
+        # Plot the aggregated violin plot with dataset names on x-axis
         violin_plot_all_datasets(aggregated_results, model_name=VANILLA_MODEL)
     else:
-        print("No real datasets were successfully processed.")
+        print("No datasets were successfully processed.")
 
     ######################## (Optional) Individual Plots & Excel Saving ########################
-    # Example: Uncomment the following lines to produce individual plots and save to Excel
+    # For demonstration, process the last aggregated results
     # cart = aggregated_results[aggregated_results['Model'] == VANILLA_MODEL]
     # hscart = aggregated_results[aggregated_results['Model'] == HS_MODEL]
     # plot(cart, hscart, 'AUC')

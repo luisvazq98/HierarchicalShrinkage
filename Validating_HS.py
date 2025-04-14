@@ -119,7 +119,7 @@ DATASET_DIC = {
         "source": 'kaggle'
     }
 }
-DATASET = "student performance"
+DATASET = "adult income"
 SOURCE = DATASET_DIC[DATASET]['source']
 PCA_VALUE = "no"
 FILE_NAME = "RF_Results"
@@ -827,8 +827,43 @@ def save_to_excel(cart_acc, hs_acc, std_cart, std_hs):
 
     print("Finished saving results to excel file!")
 
+def plot(cart, hscart, metric):
+    # Group by 'Max Leaves' and calculate the average AUC
+    cart_avg_auc = cart.groupby('Max Leaves')[metric].mean().reset_index()
+    hs_avg_auc = hscart.groupby('Max Leaves')[metric].mean().reset_index()
 
+    # Group by 'Max Leaves' and calculate the average Accuracy
+    cart_avg_acc = cart.groupby('Max Leaves')['Accuracy'].mean().reset_index()
+    hs_avg_acc = hscart.groupby('Max Leaves')['Accuracy'].mean().reset_index()
 
+    # AUC Score
+    plt.figure(figsize=(10, 6))
+    plt.plot(cart_avg_auc['Max Leaves'], cart_avg_auc[metric], marker='o', linestyle='-', color='blue',
+             label='CART AUC')
+    plt.plot(hs_avg_auc['Max Leaves'], hs_avg_auc[metric], marker='o', linestyle='-', color='red',
+             label="HSCART AUC")
+    plt.xlabel("Number of Leaves")
+    plt.ylabel(metric.upper())
+    plt.grid(True)
+    plt.title(DATASET.upper(), fontsize=20)
+    plt.legend()
+    # plt.savefig(f"{DATASET.upper()}_AUC.png", bbox_inches='tight')
+    plt.show()
+def violin_plot_cart_max_depth(cart):
+    """
+    Creates a violin plot showing the distribution of the maximum depth
+    for the CART model from the provided results DataFrame.
+
+    Parameters:
+        cart (pd.DataFrame): DataFrame containing CART model results with a column 'Max Depth'.
+    """
+    plt.figure(figsize=(8, 6))
+    sns.violinplot(y=cart['Max Depth'])
+    plt.title("Violin Plot of CART Model Max Depth")
+    plt.grid(True)
+    plt.ylabel("Max Depth")
+    plt.xlabel("")
+    plt.show()
 
 
 """
@@ -848,36 +883,29 @@ if __name__ == "__main__":
     # Use the following function only if above does not work
     # models = get_models()
 
-
     ######################## DATASET ########################
-    # x, y = get_regression_dataset(DATASET)
+    #X, Y = get_regression_dataset(DATASET)
     X, Y, *extra = get_classification_dataset(DATASET, SOURCE)
-    features = extra[0] if extra else None
+    # features = extra[0] if extra else None
 
     ######################## CONFIDENT LEARNING ########################
-    results1, results2 = confident_learning(X, Y, cart_hscart_estimators)
-    plot_noise(results1, results2)
-
-
+    # results1, results2 = confident_learning(X, Y, cart_hscart_estimators)
+    # plot_noise(results1, results2)
 
     ######################## TRAINING MODELS ########################
     results_df = training_models(X, Y, cart_hscart_estimators)
 
-    ######################## GETTING METRICS ########################
+    ######################## SEPARATING MODELS USED  ########################
     cart = results_df[results_df['Model']==VANILLA_MODEL]
     hscart = results_df[results_df['Model']==HS_MODEL]
 
-    # Group by 'Max Leaves' and calculate the average AUC
-    cart_avg_auc = cart.groupby('Max Leaves')['AUC'].mean().reset_index()
-    hs_avg_auc = hscart.groupby('Max Leaves')['AUC'].mean().reset_index()
-
-    # Group by 'Max Leaves' and calculate the average Accuracy
-    cart_avg_acc = cart.groupby('Max Leaves')['Accuracy'].mean().reset_index()
-    hs_avg_acc = hscart.groupby('Max Leaves')['Accuracy'].mean().reset_index()
+    ######################## PLOT DESIRED METRIC  ########################
+    plot(cart, hscart, 'AUC')
+    violin_plot_cart_max_depth(cart)
 
 
 
-
+    ######################## GETTING MAX ACCURACY AND CORRESPONDING STD  ########################
     # Group by 'Max Leaves' and calculate the highest accuracy
     cart_max_acc = cart.groupby('Max Leaves')['Accuracy'].mean().max()
     hs_max_acc = hscart.groupby('Max Leaves')['Accuracy'].mean().max()
@@ -886,40 +914,13 @@ if __name__ == "__main__":
 
 
     # Group by 'Max Leaves' and calculate the STD for the group that corresponds with the highest accuracy
-    # cart_mean_series = cart.groupby('Max Leaves')['Accuracy'].mean()
-    # cart_best_group = cart_mean_series.idxmax()
-    # cart_std = cart[cart['Max Leaves'] == cart_best_group]['Accuracy'].std()
-    #
-    # hs_mean_series = hscart.groupby('Max Leaves')['Accuracy'].mean()
-    # hs_best_group = hs_mean_series.idxmax()
-    # hs_std = hscart[hscart['Max Leaves'] == hs_best_group]['Accuracy'].std()
+    cart_mean_series = cart.groupby('Max Leaves')['Accuracy'].mean()
+    cart_best_group = cart_mean_series.idxmax()
+    cart_std = cart[cart['Max Leaves'] == cart_best_group]['Accuracy'].std()
 
+    hs_mean_series = hscart.groupby('Max Leaves')['Accuracy'].mean()
+    hs_best_group = hs_mean_series.idxmax()
+    hs_std = hscart[hscart['Max Leaves'] == hs_best_group]['Accuracy'].std()
 
-    ######################## WRITING TO EXCEL FILE ########################
-    #save_to_excel((cart_max_acc*100), (hs_max_acc*100), cart_std, hs_std)
-
-
-    ######################## PLOTS ########################
-    # AUC Score
-    plt.figure(figsize=(10,6))
-    plt.plot(cart_avg_auc['Max Leaves'], cart_avg_auc['AUC'], marker='o', linestyle='-', color='blue', label='CART AUC')
-    plt.plot(hs_avg_auc['Max Leaves'], hs_avg_auc['AUC'], marker='o', linestyle='-', color='red', label="HSCART AUC")
-    plt.xlabel("Number of Leaves")
-    plt.ylabel("AUC")
-    plt.grid(True)
-    plt.title(DATASET.upper(), fontsize=20)
-    plt.legend()
-    plt.savefig(f"{DATASET.upper()}_AUC.png", bbox_inches='tight')
-    plt.show()
-
-    # # Accuracy
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(cart_avg_acc['Max Leaves'], cart_avg_acc['Accuracy'], marker='o', linestyle='-', color='b', label='CART ACCURACY')
-    # plt.plot(hs_avg_acc['Max Leaves'], hs_avg_acc['Accuracy'], marker='o', linestyle='-', color='red', label='HSCART ACCURACY')
-    # plt.xlabel('Number of Leaves', fontsize=15)
-    # plt.ylabel('Accuracy', fontsize=15)
-    # plt.grid(True)
-    # plt.title(DATASET.upper(), fontsize=20)
-    # plt.legend()
-    # #plt.savefig(f"{DATASET.upper()}_Accuracy.png", bbox_inches='tight')
-    # plt.show()
+    # Writing to Excel file
+    save_to_excel((cart_max_acc*100), (hs_max_acc*100), cart_std, hs_std)

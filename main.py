@@ -115,8 +115,8 @@ PCA_VALUE = "no"
 FILE_NAME = "RF_Results"
 
 #
-VANILLA_MODEL = "Random_Forest"
-HS_MODEL = "HSEnsemble"
+VANILLA_MODEL = "CART"
+HS_MODEL = "HSCART"
 
 print(f"Dataset: {DATASET}\nSource: {SOURCE}\nPCA: {PCA_VALUE}")
 
@@ -598,7 +598,6 @@ def save_to_excel(cart_acc, hs_acc, std_cart, std_hs):
     print("Finished saving results to excel file!")
 
 
-
 if __name__ == "__main__":
     ######################## MODELS ########################
     """
@@ -634,48 +633,53 @@ if __name__ == "__main__":
     cart_avg_auc = cart.groupby('Max Leaves')['AUC'].mean().reset_index()
     hs_avg_auc = hscart.groupby('Max Leaves')['AUC'].mean().reset_index()
 
+    # Group by 'Max Leaves' and calculate the average Accuracy
+    # data_acc_dt = cart.groupby('Max Leaves')['Accuracy'].mean().reset_index()
+    # data_acc_hs = hscart.groupby('Max Leaves')['Accuracy'].mean().reset_index()
+
     # Group by 'Max Leaves' and calculate the highest accuracy
-    cart_max_acc = cart.groupby('Max Leaves')['Accuracy'].mean().max()
-    hs_max_acc = hscart.groupby('Max Leaves')['Accuracy'].mean().max()
-    print("CART Accuracy:", (cart_max_acc*100))
-    print("HSCART Accuracy:", (hs_max_acc*100))
+    # cart_max_acc = cart.groupby('Max Leaves')['Accuracy'].mean().max()
+    # hs_max_acc = hscart.groupby('Max Leaves')['Accuracy'].mean().max()
+    # print("CART Accuracy:", (cart_max_acc*100))
+    # print("HSCART Accuracy:", (hs_max_acc*100))
 
 
     # Group by 'Max Leaves' and calculate the STD for the group that corresponds with the highest accuracy
-    cart_mean_series = cart.groupby('Max Leaves')['Accuracy'].mean()
-    cart_best_group = cart_mean_series.idxmax()
-    cart_std = cart[cart['Max Leaves'] == cart_best_group]['Accuracy'].std()
-
-    hs_mean_series = hscart.groupby('Max Leaves')['Accuracy'].mean()
-    hs_best_group = hs_mean_series.idxmax()
-    hs_std = hscart[hscart['Max Leaves'] == hs_best_group]['Accuracy'].std()
+    # cart_mean_series = cart.groupby('Max Leaves')['Accuracy'].mean()
+    # cart_best_group = cart_mean_series.idxmax()
+    # cart_std = cart[cart['Max Leaves'] == cart_best_group]['Accuracy'].std()
+    #
+    # hs_mean_series = hscart.groupby('Max Leaves')['Accuracy'].mean()
+    # hs_best_group = hs_mean_series.idxmax()
+    # hs_std = hscart[hscart['Max Leaves'] == hs_best_group]['Accuracy'].std()
 
 
     ######################## WRITING TO EXCEL FILE ########################
-    save_to_excel((cart_max_acc*100), (hs_max_acc*100), cart_std, hs_std)
+    # save_to_excel((cart_max_acc*100), (hs_max_acc*100), cart_std, hs_std)
 
 
     ######################## PLOTS ########################
     # AUC Score
-    # plt.figure(figsize=(10,6))
-    # plt.plot(cart_avg_auc['Max Leaves'], cart_avg_auc['AUC'], marker='o', linestyle='-', color='blue', label='CART AUC')
-    # plt.plot(hs_avg_auc['Max Leaves'], hs_avg_auc['AUC'], marker='o', linestyle='-', color='red', label="HSCART AUC")
-    # plt.xlabel("Number of Leaves")
-    # plt.ylabel("AUC")
-    # plt.grid(True)
-    # plt.title(DATASET, fontsize=20)
-    # plt.legend()
-    # # plt.savefig("juvenile_class_au")
-    # plt.show()
+    plt.figure(figsize=(10,6))
+    plt.plot(cart_avg_auc['Max Leaves'], cart_avg_auc['AUC'], marker='o', color='blue', label='CART AUC', markersize=8, linewidth=2)
+    plt.plot(hs_avg_auc['Max Leaves'], hs_avg_auc['AUC'], marker='s', color='red', label="HSCART AUC", markersize=8, linewidth=2)
+    plt.xlabel("TREE LEAF NODES", fontsize=23)
+    plt.ylabel("AUC", fontsize=23)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.grid(True)
+    #plt.title(DATASET, fontsize=20)
+    plt.legend(fontsize=20)
+    plt.savefig(DATASET.upper())
+    plt.show()
 
     # Accuracy
     # plt.figure(figsize=(10, 6))
-    # plt.plot(LEAVES, data_acc_hs, marker='o', linestyle='-', color='red', label='HS ACCURACY')
-    # plt.plot(LEAVES, data_acc_dt, marker='o', linestyle='-', color='b', label='DT ACCURACY')
-    # plt.xlabel('Number of Leaves')
+    # plt.plot(data_acc_hs["Max Leaves"], data_acc_hs["Accuracy"], marker='o', linestyle='-', color='red', label='HS ACCURACY')
+    # plt.plot(data_acc_hs["Max Leaves"], data_acc_dt["Accuracy"], marker='o', linestyle='-', color='b', label='DT ACCURACY')
+    # plt.xlabel('Number of Leaves', fontsize=20)
     # plt.ylabel('Accuracy')
     # plt.grid(True)
-    # plt.title(DATASET, fontsize=20)
     # plt.legend()
     # # plt.savefig("juvenile_class_acc")
     # plt.show()

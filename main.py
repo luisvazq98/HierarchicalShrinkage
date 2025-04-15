@@ -103,7 +103,7 @@ DATASET_DIC = {
 
 
 # Name of desired dataset
-DATASET = "gait"
+DATASET = "student performance"
 
 # Getting dataset source from dataset dictionary
 SOURCE = DATASET_DIC[DATASET]['source']
@@ -115,8 +115,8 @@ PCA_VALUE = "no"
 FILE_NAME = "RF_Results"
 
 #
-VANILLA_MODEL = "CART"
-HS_MODEL = "HSCART"
+VANILLA_MODEL = "Random_Forest"
+HS_MODEL = "HSEnsemble"
 
 print(f"Dataset: {DATASET}\nSource: {SOURCE}\nPCA: {PCA_VALUE}")
 

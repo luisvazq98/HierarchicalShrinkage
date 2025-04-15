@@ -103,7 +103,7 @@ DATASET_DIC = {
 
 
 # Name of desired dataset
-DATASET = "gait"
+DATASET = "student performance"
 
 # Getting dataset source from dataset dictionary
 SOURCE = DATASET_DIC[DATASET]['source']
@@ -114,9 +114,10 @@ PCA_VALUE = "no"
 # Excel file name to save results
 FILE_NAME = "RF_Results"
 
-#
-VANILLA_MODEL = "CART"
-HS_MODEL = "HSCART"
+# Random_Forest
+# HSEnsemble
+VANILLA_MODEL = "Random_Forest"
+HS_MODEL = "HSEnsemble"
 
 print(f"Dataset: {DATASET}\nSource: {SOURCE}\nPCA: {PCA_VALUE}")
 
@@ -661,8 +662,8 @@ if __name__ == "__main__":
     ######################## PLOTS ########################
     # AUC Score
     plt.figure(figsize=(10,6))
-    plt.plot(cart_avg_auc['Max Leaves'], cart_avg_auc['AUC'], marker='o', color='blue', label='CART AUC', markersize=8, linewidth=2)
-    plt.plot(hs_avg_auc['Max Leaves'], hs_avg_auc['AUC'], marker='s', color='red', label="HSCART AUC", markersize=8, linewidth=2)
+    plt.plot(cart_avg_auc['Max Leaves'], cart_avg_auc['AUC'], marker='o', color='blue', label='RF AUC', markersize=8, linewidth=2)
+    plt.plot(hs_avg_auc['Max Leaves'], hs_avg_auc['AUC'], marker='s', color='red', label="HS-RF AUC", markersize=8, linewidth=2)
     plt.xlabel("TREE LEAF NODES", fontsize=23)
     plt.ylabel("AUC", fontsize=23)
     plt.xticks(fontsize=15)
@@ -670,7 +671,7 @@ if __name__ == "__main__":
     plt.grid(True)
     #plt.title(DATASET, fontsize=20)
     plt.legend(fontsize=20)
-    plt.savefig(DATASET.upper())
+    #plt.savefig(DATASET.upper())
     plt.show()
 
     # Accuracy

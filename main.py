@@ -103,7 +103,7 @@ DATASET_DIC = {
 
 
 # Name of desired dataset
-DATASET = "student performance"
+DATASET = "internet ads"
 
 # Getting dataset source from dataset dictionary
 SOURCE = DATASET_DIC[DATASET]['source']
@@ -394,9 +394,11 @@ def training_models(x, y, models):
         print(f"Currently on seed: {i}")
         if SOURCE == 'imodels':
             train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=1/3, random_state=i)
+            print("Length of testing set: ", len(test_x))
         else:
             # Splitting dataset
             train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=1/3, random_state=i)
+            print("Length of testing set: ", len(test_x))
 
             # Standard Scaler
             # scaler = StandardScaler()

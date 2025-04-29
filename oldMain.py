@@ -95,40 +95,41 @@ def split_data(x, y):
 # CIFAR-10
 #
 ###################################################################
-with open('Temp.csv', 'a', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow([METHOD])
-    writer.writerow(['Average Accuracy', 'Time (min)'])
-    runs = pd.DataFrame(columns=['Accuracy', 'Time (min)'])
-    for run in range(0, 100):
-        # Loading dataset
-        x_train_cifar, y_train_cifar, x_test_cifar, y_test_cifar = load_data_image(cifar10)
-
-        # Flatten images
-        x_train_cifar_flat = x_train_cifar.reshape(x_train_cifar.shape[0], -1)
-        x_test_cifar_flat = x_test_cifar.reshape(x_test_cifar.shape[0], -1)
-
-        # Normalize images
-        x_train_cifar_flat = x_train_cifar_flat / 255.0
-        x_test_cifar_flat = x_test_cifar_flat / 255.0
-
-        # PCA
-        # pca = PCA(0.99)
-        # pca.fit(x_train_cifar_flat)
-        # x_train_cifar_flat = pca.transform(x_train_cifar_flat)
-        # x_test_cifar_flat = pca.transform(x_test_cifar_flat)
-
-        # Training model
-        start_time = time.time()
-        MODEL.fit(x_train_cifar_flat, y_train_cifar.ravel())
-        end_time = time.time()
-
-        predictions = MODEL.predict(x_test_cifar_flat)
-        accuracy = (accuracy_score(y_test_cifar, predictions)) * 100
-        runs.loc[run] = accuracy, ((end_time - start_time) / 60)
-
-    writer.writerow([runs['Accuracy'].mean(), runs['Time (min)'].mean()])
-    writer.writerow([runs['Accuracy'].std(), runs['Time (min)'].std()])
+# with open('Temp.csv', 'a', newline='') as csvfile:
+#     #writer = csv.writer(csvfile)
+#     #writer.writerow([METHOD])
+#     #writer.writerow(['Average Accuracy', 'Time (min)'])
+#     runs = pd.DataFrame(columns=['Accuracy', 'Time (min)'])
+#     for run in range(0, 100):
+#         # Loading dataset
+#         x_train_cifar, y_train_cifar, x_test_cifar, y_test_cifar = load_data_image(cifar10)
+#         print("Length of testing: ", len(y_test_cifar))
+#
+#         # Flatten images
+#         x_train_cifar_flat = x_train_cifar.reshape(x_train_cifar.shape[0], -1)
+#         x_test_cifar_flat = x_test_cifar.reshape(x_test_cifar.shape[0], -1)
+#
+#         # Normalize images
+#         x_train_cifar_flat = x_train_cifar_flat / 255.0
+#         x_test_cifar_flat = x_test_cifar_flat / 255.0
+#
+#         # PCA
+#         # pca = PCA(0.99)
+#         # pca.fit(x_train_cifar_flat)
+#         # x_train_cifar_flat = pca.transform(x_train_cifar_flat)
+#         # x_test_cifar_flat = pca.transform(x_test_cifar_flat)
+#
+#         # Training model
+#         start_time = time.time()
+#         MODEL.fit(x_train_cifar_flat, y_train_cifar.ravel())
+#         end_time = time.time()
+#
+#         predictions = MODEL.predict(x_test_cifar_flat)
+#         accuracy = (accuracy_score(y_test_cifar, predictions)) * 100
+#         runs.loc[run] = accuracy, ((end_time - start_time) / 60)
+#
+#     writer.writerow([runs['Accuracy'].mean(), runs['Time (min)'].mean()])
+#     writer.writerow([runs['Accuracy'].std(), runs['Time (min)'].std()])
 
 
 
@@ -138,13 +139,14 @@ with open('Temp.csv', 'a', newline='') as csvfile:
 #
 ###################################################################
 with open('Temp.csv', 'a', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow([])
-    writer.writerow([METHOD])
-    writer.writerow(['Run', 'Accuracy', 'Time (s)'])
+    #writer = csv.writer(csvfile)
+    #writer.writerow([])
+    #writer.writerow([METHOD])
+    #writer.writerow(['Run', 'Accuracy', 'Time (s)'])
     for run in range(1, 6):
         # Loading dataset
         x_train_fashion, y_train_fashion, x_test_fashion, y_test_fashion = load_data_image(fashion_mnist)
+        print("Length of testing: ", len(y_test_fashion))
 
         # Flatten images
         x_train_fashion_flat = x_train_fashion.reshape(x_train_fashion.shape[0], -1)
